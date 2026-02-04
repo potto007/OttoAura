@@ -1,6 +1,6 @@
 {
   "name": "RepairStation",
-  "version_number": "1.2.5",
+  "version_number": "1.2.6",
   "website_url": "https://discord.gg/pdHgy6Bsng",
   "description": "Simple station to repair your shit. All at once or one at a time. Make it free, or cost {x} amount of {x} item. Just interact with this shit.",
   "dependencies": [

@@ -101,7 +101,7 @@
             <HintPath>$(CorlibPath)\UnityEngine.CoreModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.ImageConversionModule">
-          <HintPath>$(CorlibPath)\UnityEngine.ImageConversionModule.dll</HintPath>
+          <HintPath>C:\Users\crypt\OneDrive\Desktop\Libs\UnityEngine.ImageConversionModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.IMGUIModule">
             <HintPath>$(CorlibPath)\UnityEngine.IMGUIModule.dll</HintPath>
@@ -111,6 +111,9 @@
         </Reference>
         <Reference Include="UnityEngine.TextRenderingModule">
             <HintPath>$(CorlibPath)\UnityEngine.TextRenderingModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.UIModule">
+            <HintPath>$(CorlibPath)\UnityEngine.UIModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.UI">
             <HintPath>$(CorlibPath)\UnityEngine.UI.dll</HintPath>

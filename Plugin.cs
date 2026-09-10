@@ -9,7 +9,6 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using JetBrains.Annotations;
-using PieceManager;
 using ServerSync;
 using UnityEngine;
 
@@ -17,8 +16,8 @@ namespace OttoAura
 {
     [BepInPlugin(ModGUID, ModName, ModVersion)]
     [BepInDependency("org.bepinex.plugins.blacksmithing", BepInDependency.DependencyFlags.SoftDependency)]
-    // Both register the same RepairStation piece, so only one may load.
-    [BepInIncompatibility("Azumatt.RepairStation")]
+    // Loads OttoPay first when both are installed, so AuraPay is ready for the first tick.
+    [BepInDependency("potto007.OttoPay", BepInDependency.DependencyFlags.SoftDependency)]
     public class OttoAuraPlugin : BaseUnityPlugin
     {
         internal const string ModName = "OttoAura";
@@ -49,39 +48,27 @@ namespace OttoAura
             context = this;
             _serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
             _ = ConfigSync.AddLockingConfigEntry(_serverConfigLocked);
-            
-            PreventCraftingStationRepair = config("2 - Repair Station", "Prevent Crafting Station Repair", Toggle.Off, "If on, Players will not be able to repair items at crafting stations. They must use the Repair Station.");
-            
-            RepairAllItems = config("2 - Repair Station Cost", "Repair All Items", Toggle.Off, "If set to true, the RepairItems() method will be called in a loop until all repairable items are repaired. If set to false, the RepairItems() method will be called once.");
-            UseItemMultiplier = config("2 - Repair Station Cost", "Use Item Multiplier", Toggle.On, "If set to true, the Cost Item Amount times the amount of items needing repair will be used to calculate the cost of repairing an item. If set to false, the Cost Item Amount will be used to calculate the cost of repairing an item.");
-            ShouldCost = config("2 - Repair Station Cost", "Should Cost?", Toggle.Off, "Should using the repair station cost the player something from their inventory?");
-            RepairItem = config("2 - Repair Station Cost", "Cost Item", "Coins", "Item needed to use the Repair Station. Limit is 1 item: Goes by prefab name and must be a valid item the player can hold. List of vanilla items here: https://valheim-modding.github.io/Jotunn/data/objects/item-list.html");
-            Cost = config("2 - Repair Station Cost", "Cost Item Amount", 5, "Amount of the item needed to repair all items in the inventory.");
-            
-            
-            BuildPiece repairStation = new("repairstation", "RepairStation");
-            repairStation.Name.English("Repair Station");
-            repairStation.Description.English("Simple station to repair your tools. All at once. Just interact with this shit.");
-            repairStation.RequiredItems.Add("Iron", 30, true);
-            repairStation.RequiredItems.Add("Wood", 10, true);
-            repairStation.RequiredItems.Add("SurtlingCore", 3, true);
-            repairStation.Category.Set(BuildPieceCategory.Misc);
-            repairStation.Crafting.Set(CraftingTable.Forge);
 
-            repairStation.Prefab.AddComponent<RepairStation>();
-            MaterialReplacer.RegisterGameObjectForMatSwap(repairStation.Prefab);
+            HealPerSecond = config("2 - Aura", "Heal Per Second", 1f, new ConfigDescription("Health restored each second to a permitted player inside an active ward. 0 turns healing off.", new AcceptableValueRange<float>(0f, 50f)));
+            RepairPercentPerTick = config("2 - Aura", "Repair Percent Per Tick", 5f, new ConfigDescription("Percent of an item's maximum durability restored each tick, for worn gear carried by a permitted player inside an active ward. 0 turns repair off.", new AcceptableValueRange<float>(0f, 100f)));
+            CoinsPerItemTick = config("2 - Aura", "Coins Per Item Tick", 1, new ConfigDescription("Coins taken from the OttoPay pouch for each item repaired in a tick. The player must turn AuraPay on in OttoPay. 0 makes repair free, and then OttoPay is not needed.", new AcceptableValueRange<int>(0, 1000)));
+            TickSeconds = config("2 - Aura", "Tick Seconds", 1f, new ConfigDescription("Seconds between aura ticks.", new AcceptableValueRange<float>(0.25f, 30f)));
+            ShowHealText = config("2 - Aura", "Show Heal Text", Toggle.Off, "If on, each heal tick shows a floating heal number.", false);
+            PreventCraftingStationRepair = config("3 - Crafting Stations", "Prevent Crafting Station Repair", Toggle.Off, "If on, players cannot repair items at crafting stations and must use a ward aura.");
 
-            if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing))
+            if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing) && Blacksmithing != null)
             {
-                if (Blacksmithing != null)
-                {
-                    BlacksmithingInstalled = true;
-                }
+                BlacksmithingInstalled = true;
             }
-            
+
             Assembly assembly = Assembly.GetExecutingAssembly();
             _harmony.PatchAll(assembly);
             SetupWatcher();
+        }
+
+        private void Update()
+        {
+            WardAura.Update(Time.deltaTime);
         }
         
 
@@ -148,11 +135,11 @@ namespace OttoAura
 
         private static ConfigEntry<Toggle> _serverConfigLocked = null!;
         internal static ConfigEntry<Toggle> PreventCraftingStationRepair = null!;
-        internal static ConfigEntry<Toggle> RepairAllItems = null!;
-        internal static ConfigEntry<Toggle> UseItemMultiplier = null!;
-        internal static ConfigEntry<Toggle> ShouldCost = null!;
-        internal static ConfigEntry<int> Cost = null!;
-        internal static ConfigEntry<string> RepairItem = null!;
+        internal static ConfigEntry<float> HealPerSecond = null!;
+        internal static ConfigEntry<float> RepairPercentPerTick = null!;
+        internal static ConfigEntry<int> CoinsPerItemTick = null!;
+        internal static ConfigEntry<float> TickSeconds = null!;
+        internal static ConfigEntry<Toggle> ShowHealText = null!;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {

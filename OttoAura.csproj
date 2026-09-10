@@ -41,10 +41,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="assets/repairstation" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="environment.props" />
     <None Include="ILRepack.targets" />
     <None Include="README.md" />

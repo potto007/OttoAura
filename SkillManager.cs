@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -388,10 +388,23 @@ public class Skill
 		return stream.ToArray();
 	}
 
+	// UnityEngine.ImageConversionModule cannot be referenced from net48: its metadata
+	// names ReadOnlySpan<byte>, which lives in the game's Mono mscorlib and not in the
+	// net48 reference assemblies. The byte[] overload of LoadImage still exists, so it is
+	// bound once at startup instead.
+	private static readonly MethodInfo? LoadImageMethod = AccessTools.Method(
+		"UnityEngine.ImageConversion:LoadImage", new[] { typeof(Texture2D), typeof(byte[]) });
+
 	private static Texture2D loadTexture(string name)
 	{
 		Texture2D texture = new(0, 0);
-		texture.LoadImage(ReadEmbeddedFileBytes("icons." + name));
+		if (LoadImageMethod == null)
+		{
+			Debug.LogError("UnityEngine.ImageConversion.LoadImage was not found. Skill icons will not load.");
+			return texture;
+		}
+
+		LoadImageMethod.Invoke(null, new object[] { texture, ReadEmbeddedFileBytes("icons." + name) });
 		return texture;
 	}
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -13,27 +13,29 @@ using PieceManager;
 using ServerSync;
 using UnityEngine;
 
-namespace RepairStation
+namespace OttoAura
 {
     [BepInPlugin(ModGUID, ModName, ModVersion)]
     [BepInDependency("org.bepinex.plugins.blacksmithing", BepInDependency.DependencyFlags.SoftDependency)]
-    public class RepairStationPlugin : BaseUnityPlugin
+    // Both register the same RepairStation piece, so only one may load.
+    [BepInIncompatibility("Azumatt.RepairStation")]
+    public class OttoAuraPlugin : BaseUnityPlugin
     {
-        internal const string ModName = "RepairStation";
-        internal const string ModVersion = "1.2.6";
-        internal const string Author = "Azumatt";
+        internal const string ModName = "OttoAura";
+        internal const string ModVersion = "1.0.0";
+        internal const string Author = "potto007";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
         private static string ConfigFileFullPath = Paths.ConfigPath + Path.DirectorySeparatorChar + ConfigFileName;
         internal static string ConnectionError = "";
         private readonly Harmony _harmony = new(ModGUID);
 
-        public static readonly ManualLogSource RepairStationLogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
+        public static readonly ManualLogSource OttoAuraLogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
 
         private static readonly ConfigSync ConfigSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
 
         internal static CraftingStation craftingStationClone = null!;
-        internal static RepairStationPlugin context = null!;
+        internal static OttoAuraPlugin context = null!;
         internal static bool BlacksmithingInstalled;
 
         public enum Toggle
@@ -131,13 +133,13 @@ namespace RepairStation
             if (!File.Exists(ConfigFileFullPath)) return;
             try
             {
-                RepairStationLogger.LogDebug("ReadConfigValues called");
+                OttoAuraLogger.LogDebug("ReadConfigValues called");
                 Config.Reload();
             }
             catch
             {
-                RepairStationLogger.LogError($"There was an issue loading your {ConfigFileName}");
-                RepairStationLogger.LogError("Please check your config entries for spelling and format!");
+                OttoAuraLogger.LogError($"There was an issue loading your {ConfigFileName}");
+                OttoAuraLogger.LogError("Please check your config entries for spelling and format!");
             }
         }
 
@@ -185,7 +187,7 @@ namespace RepairStation
     {
         static void Postfix(ZNetScene __instance)
         {
-            RepairStationPlugin.craftingStationClone = ZNetScene.instance.GetPrefab("piece_workbench").GetComponent<CraftingStation>();
+            OttoAuraPlugin.craftingStationClone = ZNetScene.instance.GetPrefab("piece_workbench").GetComponent<CraftingStation>();
         }
     }
 
@@ -194,7 +196,7 @@ namespace RepairStation
     {
         static void Postfix(InventoryGui __instance)
         {
-            if (RepairStationPlugin.PreventCraftingStationRepair.Value == RepairStationPlugin.Toggle.On)
+            if (OttoAuraPlugin.PreventCraftingStationRepair.Value == OttoAuraPlugin.Toggle.On)
             {
                 if (Player.m_localPlayer.GetCurrentCraftingStation() != null && !Player.m_localPlayer.NoCostCheat())
                 {

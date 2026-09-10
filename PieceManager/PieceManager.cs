@@ -1758,22 +1758,24 @@ public static class PiecePrefabManager
         }
     }
 
+    // Valheim 1.0 turned m_availablePieces into a flat HashSet<Piece> and moved the list for
+    // each category to m_availablePiecesByCategory, so the category padding targets that list.
     private static void UpdateAvailable_Prefix(PieceTable __instance)
     {
-        if (__instance.m_availablePieces.Count > 0)
+        if (__instance.m_availablePiecesByCategory.Count > 0)
         {
-            int missing = ModifiedMaxCategory() - __instance.m_availablePieces.Count;
+            int missing = ModifiedMaxCategory() - __instance.m_availablePiecesByCategory.Count;
             for (int i = 0; i < missing; ++i)
             {
-                __instance.m_availablePieces.Add(new List<Piece>());
+                __instance.m_availablePiecesByCategory.Add(new List<Piece>());
             }
         }
     }
 
     private static void UpdateAvailable_Postfix(PieceTable __instance)
     {
-        Array.Resize(ref __instance.m_selectedPiece, __instance.m_availablePieces.Count);
-        Array.Resize(ref __instance.m_lastSelectedPiece, __instance.m_availablePieces.Count);
+        Array.Resize(ref __instance.m_selectedPiece, __instance.m_availablePiecesByCategory.Count);
+        Array.Resize(ref __instance.m_lastSelectedPiece, __instance.m_availablePiecesByCategory.Count);
     }
 
     [HarmonyPriority(Priority.Low)]

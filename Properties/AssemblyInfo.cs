@@ -1,15 +1,15 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using RepairStation;
+using OttoAura;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle(RepairStationPlugin.ModName)]
+[assembly: AssemblyTitle(OttoAuraPlugin.ModName)]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany(RepairStationPlugin.Author)]
-[assembly: AssemblyProduct(RepairStationPlugin.ModName)]
+[assembly: AssemblyCompany(OttoAuraPlugin.Author)]
+[assembly: AssemblyProduct(OttoAuraPlugin.ModName)]
 [assembly: AssemblyCopyright("Copyright ©  2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -32,5 +32,5 @@ using RepairStation;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion(RepairStationPlugin.ModVersion)]
-[assembly: AssemblyFileVersion(RepairStationPlugin.ModVersion)]
+[assembly: AssemblyVersion(OttoAuraPlugin.ModVersion)]
+[assembly: AssemblyFileVersion(OttoAuraPlugin.ModVersion)]

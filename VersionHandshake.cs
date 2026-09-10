@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using HarmonyLib;
 
-namespace RepairStation
+namespace OttoAura
 {
     [HarmonyPatch(typeof(ZNet), nameof(ZNet.OnNewConnection))]
     public static class RegisterAndCheckVersion
@@ -14,15 +14,15 @@ namespace RepairStation
         private static void Prefix(ZNetPeer peer, ref ZNet __instance)
         {
             // Register version check call
-            RepairStationPlugin.RepairStationLogger.LogDebug("Registering version RPC handler");
-            peer.m_rpc.Register($"{RepairStationPlugin.ModName}_VersionCheck", new Action<ZRpc, ZPackage>(RpcHandlers.RPC_AllManagersModTemplate_Version));
+            OttoAuraPlugin.OttoAuraLogger.LogDebug("Registering version RPC handler");
+            peer.m_rpc.Register($"{OttoAuraPlugin.ModName}_VersionCheck", new Action<ZRpc, ZPackage>(RpcHandlers.RPC_AllManagersModTemplate_Version));
 
             // Make calls to check versions
-            RepairStationPlugin.RepairStationLogger.LogDebug("Invoking version check");
+            OttoAuraPlugin.OttoAuraLogger.LogDebug("Invoking version check");
             ZPackage zpackage = new();
-            zpackage.Write(RepairStationPlugin.ModVersion);
+            zpackage.Write(OttoAuraPlugin.ModVersion);
             zpackage.Write(RpcHandlers.ComputeHashForMod().Replace("-", ""));
-            peer.m_rpc.Invoke($"{RepairStationPlugin.ModName}_VersionCheck", zpackage);
+            peer.m_rpc.Invoke($"{OttoAuraPlugin.ModName}_VersionCheck", zpackage);
         }
     }
 
@@ -33,14 +33,14 @@ namespace RepairStation
         {
             if (!__instance.IsServer() || RpcHandlers.ValidatedPeers.Contains(rpc)) return true;
             // Disconnect peer if they didn't send mod version at all
-            RepairStationPlugin.RepairStationLogger.LogWarning($"Peer ({rpc.m_socket.GetHostName()}) never sent version or couldn't due to previous disconnect, disconnecting");
+            OttoAuraPlugin.OttoAuraLogger.LogWarning($"Peer ({rpc.m_socket.GetHostName()}) never sent version or couldn't due to previous disconnect, disconnecting");
             rpc.Invoke("Error", 3);
             return false; // Prevent calling underlying method
         }
 
         private static void Postfix(ZNet __instance)
         {
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), $"{RepairStationPlugin.ModName}RequestAdminSync",
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), $"{OttoAuraPlugin.ModName}RequestAdminSync",
                 new ZPackage());
         }
     }
@@ -54,7 +54,7 @@ namespace RepairStation
             {
                 __instance.m_connectionFailedError.fontSizeMax = 25;
                 __instance.m_connectionFailedError.fontSizeMin = 15;
-                __instance.m_connectionFailedError.text += "\n" + RepairStationPlugin.ConnectionError;
+                __instance.m_connectionFailedError.text += "\n" + OttoAuraPlugin.ConnectionError;
             }
         }
     }
@@ -66,7 +66,7 @@ namespace RepairStation
         {
             if (!__instance.IsServer()) return;
             // Remove peer from validated list
-            RepairStationPlugin.RepairStationLogger.LogInfo(
+            OttoAuraPlugin.OttoAuraLogger.LogInfo(
                 $"Peer ({peer.m_rpc.m_socket.GetHostName()}) disconnected, removing from validated list");
             _ = RpcHandlers.ValidatedPeers.Remove(peer.m_rpc);
         }
@@ -82,15 +82,15 @@ namespace RepairStation
             string? hash = pkg.ReadString();
 
             var hashForAssembly = ComputeHashForMod().Replace("-", "");
-            RepairStationPlugin.RepairStationLogger.LogInfo("Version check, local: " +
-                                                            RepairStationPlugin.ModVersion +
+            OttoAuraPlugin.OttoAuraLogger.LogInfo("Version check, local: " +
+                                                            OttoAuraPlugin.ModVersion +
                                                             ",  remote: " + version);
-            if (hash != hashForAssembly || version != RepairStationPlugin.ModVersion)
+            if (hash != hashForAssembly || version != OttoAuraPlugin.ModVersion)
             {
-                RepairStationPlugin.ConnectionError = $"{RepairStationPlugin.ModName} Installed: {RepairStationPlugin.ModVersion} {hashForAssembly}\n Needed: {version} {hash}";
+                OttoAuraPlugin.ConnectionError = $"{OttoAuraPlugin.ModName} Installed: {OttoAuraPlugin.ModVersion} {hashForAssembly}\n Needed: {version} {hash}";
                 if (!ZNet.instance.IsServer()) return;
                 // Different versions - force disconnect client from server
-                RepairStationPlugin.RepairStationLogger.LogWarning($"Peer ({rpc.m_socket.GetHostName()}) has incompatible version, disconnecting...");
+                OttoAuraPlugin.OttoAuraLogger.LogWarning($"Peer ({rpc.m_socket.GetHostName()}) has incompatible version, disconnecting...");
                 rpc.Invoke("Error", 3);
             }
             else
@@ -98,13 +98,13 @@ namespace RepairStation
                 if (!ZNet.instance.IsServer())
                 {
                     // Enable mod on client if versions match
-                    RepairStationPlugin.RepairStationLogger.LogInfo(
+                    OttoAuraPlugin.OttoAuraLogger.LogInfo(
                         "Received same version from server!");
                 }
                 else
                 {
                     // Add client to validated list
-                    RepairStationPlugin.RepairStationLogger.LogInfo(
+                    OttoAuraPlugin.OttoAuraLogger.LogInfo(
                         $"Adding peer ({rpc.m_socket.GetHostName()}) to validated list");
                     ValidatedPeers.Add(rpc);
                 }

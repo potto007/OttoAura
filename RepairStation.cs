@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
@@ -8,7 +8,7 @@ using SkillManager;
 using UnityEngine;
 using Object = System.Object;
 
-namespace RepairStation;
+namespace OttoAura;
 
 public class RepairStation : MonoBehaviour, Hoverable, Interactable
 {
@@ -19,14 +19,17 @@ public class RepairStation : MonoBehaviour, Hoverable, Interactable
     public string GetHoverText()
     {
         GetWornItemsHover(m_tempWornItemsHover);
-        CostAmount = RepairStationPlugin.UseItemMultiplier.Value == RepairStationPlugin.Toggle.On && RepairStationPlugin.RepairAllItems.Value == RepairStationPlugin.Toggle.On ? RepairStationPlugin.Cost.Value * m_tempWornItemsHover.Count : RepairStationPlugin.Cost.Value;
+        CostAmount = OttoAuraPlugin.UseItemMultiplier.Value == OttoAuraPlugin.Toggle.On && OttoAuraPlugin.RepairAllItems.Value == OttoAuraPlugin.Toggle.On ? OttoAuraPlugin.Cost.Value * m_tempWornItemsHover.Count : OttoAuraPlugin.Cost.Value;
         StringBuilder stringBuilder = new();
-        stringBuilder.Append(Localization.instance.Localize($"{GetHoverName()}{Environment.NewLine}Press [<color=yellow><b>$KEY_Use</b></color>] to repair everything in your inventory{(RepairStationPlugin.ShouldCost.Value == RepairStationPlugin.Toggle.On ? $" (Uses {CostAmount} {RepairStationPlugin.RepairItem.Value})" : "")}"));
+        stringBuilder.Append(Localization.instance.Localize($"{GetHoverName()}{Environment.NewLine}Press [<color=yellow><b>$KEY_Use</b></color>] to repair everything in your inventory{(OttoAuraPlugin.ShouldCost.Value == OttoAuraPlugin.Toggle.On ? $" (Uses {CostAmount} {OttoAuraPlugin.RepairItem.Value})" : "")}"));
 
         return stringBuilder.ToString();
     }
 
     public string GetHoverName() => Localization.instance.Localize("$piece_repairstation");
+
+    // Valheim 1.0 added this to Hoverable. Zero keeps the vanilla hover position.
+    public float GetHoverOffset() => 0f;
 
 
     public bool Interact(Humanoid character, bool hold, bool alt)
@@ -35,7 +38,7 @@ public class RepairStation : MonoBehaviour, Hoverable, Interactable
             return false;
         if (!CheckRepairCost(costValue: CostAmount))
         {
-            ItemDrop? item = ZNetScene.instance.GetPrefab(RepairStationPlugin.RepairItem.Value).GetComponent<ItemDrop>();
+            ItemDrop? item = ZNetScene.instance.GetPrefab(OttoAuraPlugin.RepairItem.Value).GetComponent<ItemDrop>();
             if (!item) return false;
             var amountPlayerHas = Player.m_localPlayer.GetInventory().CountItems(item.m_itemData.m_shared.m_name);
             var costAmountHeld = CostAmount;
@@ -50,7 +53,7 @@ public class RepairStation : MonoBehaviour, Hoverable, Interactable
         else
         {
             int repairCount = 0;
-            if (RepairStationPlugin.RepairAllItems.Value == RepairStationPlugin.Toggle.On)
+            if (OttoAuraPlugin.RepairAllItems.Value == OttoAuraPlugin.Toggle.On)
             {
                 while (HaveRepairableItems())
                 {
@@ -65,9 +68,9 @@ public class RepairStation : MonoBehaviour, Hoverable, Interactable
             }
 
             if (repairCount <= 0) return true;
-            var costValue = RepairStationPlugin.UseItemMultiplier.Value == RepairStationPlugin.Toggle.On ? RepairStationPlugin.Cost.Value * repairCount : RepairStationPlugin.Cost.Value;
+            var costValue = OttoAuraPlugin.UseItemMultiplier.Value == OttoAuraPlugin.Toggle.On ? OttoAuraPlugin.Cost.Value * repairCount : OttoAuraPlugin.Cost.Value;
             CheckRepairCost(true, costValue);
-            RepairStationPlugin.craftingStationClone.m_repairItemDoneEffects.Create(transform.position, Quaternion.identity);
+            OttoAuraPlugin.craftingStationClone.m_repairItemDoneEffects.Create(transform.position, Quaternion.identity);
         }
 
 
@@ -115,26 +118,26 @@ public class RepairStation : MonoBehaviour, Hoverable, Interactable
         {
             if (CanRepairItems(tempWornItem))
             {
-                if (RepairStationPlugin.BlacksmithingInstalled)
+                if (OttoAuraPlugin.BlacksmithingInstalled)
                 {
                     int minutesToSet = 0;
                     float skillFactor = Player.m_localPlayer.GetSkillFactor(Skill.fromName("Blacksmithing"));
                     if (skillFactor >= 0.5f)
                         minutesToSet = (int)(10 * skillFactor);
                     tempWornItem.m_customData["RepairStation"] = DateTime.Now.AddMinutes(minutesToSet).ToString(CultureInfo.InvariantCulture);
-                    RepairStationPlugin.RepairStationLogger.LogDebug($"(Can Repair Items) Setting Time {tempWornItem.m_shared.m_name} {DateTime.Now.AddMinutes(minutesToSet)}");
+                    OttoAuraPlugin.OttoAuraLogger.LogDebug($"(Can Repair Items) Setting Time {tempWornItem.m_shared.m_name} {DateTime.Now.AddMinutes(minutesToSet)}");
                     tempWornItem.m_durability = tempWornItem.GetMaxDurability();
                     // Cache the m_useDurability into custom data
                     tempWornItem.m_customData["RepairStationUseDurability"] = tempWornItem.m_shared.m_useDurability.ToString();
-                    RepairStationPlugin.RepairStationLogger.LogDebug($"(Can Repair Items) Storing UseDurability {tempWornItem.m_shared.m_name} {tempWornItem.m_shared.m_useDurability}");
+                    OttoAuraPlugin.OttoAuraLogger.LogDebug($"(Can Repair Items) Storing UseDurability {tempWornItem.m_shared.m_name} {tempWornItem.m_shared.m_useDurability}");
                 }
                 else
                 {
                     tempWornItem.m_durability = tempWornItem.GetMaxDurability();
                 }
 
-                if (RepairStationPlugin.craftingStationClone != null)
-                    RepairStationPlugin.craftingStationClone.m_repairItemDoneEffects.Create(transform.position, Quaternion.identity);
+                if (OttoAuraPlugin.craftingStationClone != null)
+                    OttoAuraPlugin.craftingStationClone.m_repairItemDoneEffects.Create(transform.position, Quaternion.identity);
                 Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_repaired", tempWornItem.m_shared.m_name));
                 return;
             }
@@ -145,15 +148,15 @@ public class RepairStation : MonoBehaviour, Hoverable, Interactable
 
     internal static bool CheckRepairCost(bool shouldRemove = false, int costValue = 1)
     {
-        if (RepairStationPlugin.ShouldCost.Value == RepairStationPlugin.Toggle.Off) return true;
-        ItemDrop? item = ZNetScene.instance.GetPrefab(RepairStationPlugin.RepairItem.Value).GetComponent<ItemDrop>();
+        if (OttoAuraPlugin.ShouldCost.Value == OttoAuraPlugin.Toggle.Off) return true;
+        ItemDrop? item = ZNetScene.instance.GetPrefab(OttoAuraPlugin.RepairItem.Value).GetComponent<ItemDrop>();
         if (!item) return false;
         ItemName = Localization.instance.Localize(item.m_itemData.m_shared.m_name);
         if (Player.m_localPlayer.GetInventory().CountItems(item.m_itemData.m_shared.m_name) >= costValue)
         {
             if (shouldRemove)
             {
-                RepairStationPlugin.RepairStationLogger.LogError($"Removing Items {costValue}");
+                OttoAuraPlugin.OttoAuraLogger.LogError($"Removing Items {costValue}");
                 Player.m_localPlayer.GetInventory().RemoveItem(item.m_itemData.m_shared.m_name, costValue);
                 Player.m_localPlayer.ShowRemovedMessage(item.m_itemData, costValue);
             }
@@ -199,11 +202,11 @@ static class PlayerItemGetPatch
                 if (!DateTime.TryParse(timeValue, out DateTime repairTime)) return;
                 if (DateTime.Now > repairTime)
                 {
-                    RepairStationPlugin.RepairStationLogger.LogDebug($"(GetRightItem) Removing Time {rightItem.m_shared.m_name}");
+                    OttoAuraPlugin.OttoAuraLogger.LogDebug($"(GetRightItem) Removing Time {rightItem.m_shared.m_name}");
                     rightItem.m_customData.Remove("RepairStation");
                     // Set m_useDurability back to what it was
                     if (!rightItem.m_customData.TryGetValue("RepairStationUseDurability", out string? useDurabilityValue)) return;
-                    RepairStationPlugin.RepairStationLogger.LogDebug($"(GetRightItem) Setting UseDurability {rightItem.m_shared.m_name} {bool.Parse(useDurabilityValue)}");
+                    OttoAuraPlugin.OttoAuraLogger.LogDebug($"(GetRightItem) Setting UseDurability {rightItem.m_shared.m_name} {bool.Parse(useDurabilityValue)}");
                     rightItem.m_shared.m_useDurability = bool.Parse(useDurabilityValue);
                     rightItem.m_customData.Remove("RepairStationUseDurability");
                 }
@@ -220,11 +223,11 @@ static class PlayerItemGetPatch
                 if (!DateTime.TryParse(timeValue, out DateTime repairTime)) return;
                 if (DateTime.Now > repairTime)
                 {
-                    RepairStationPlugin.RepairStationLogger.LogDebug($"(GetLeftItem) Removing Time {leftItem.m_shared.m_name}");
+                    OttoAuraPlugin.OttoAuraLogger.LogDebug($"(GetLeftItem) Removing Time {leftItem.m_shared.m_name}");
                     leftItem.m_customData.Remove("RepairStation");
                     // Set m_useDurability back to what it was
                     if (!leftItem.m_customData.TryGetValue("RepairStationUseDurability", out string? useDurabilityValue)) return;
-                    RepairStationPlugin.RepairStationLogger.LogDebug($"(GetLeftItem) Setting UseDurability {leftItem.m_shared.m_name} {bool.Parse(useDurabilityValue)}");
+                    OttoAuraPlugin.OttoAuraLogger.LogDebug($"(GetLeftItem) Setting UseDurability {leftItem.m_shared.m_name} {bool.Parse(useDurabilityValue)}");
                     leftItem.m_shared.m_useDurability = bool.Parse(useDurabilityValue);
                     leftItem.m_customData.Remove("RepairStationUseDurability");
                 }
@@ -248,11 +251,11 @@ static class ItemDropItemDataIsItemEquipedPatch
         if (!DateTime.TryParse(timeValue, out DateTime repairTime)) return;
         if (DateTime.Now > repairTime)
         {
-            RepairStationPlugin.RepairStationLogger.LogDebug($"(IsItemEquiped) Removing Time {item.m_shared.m_name}");
+            OttoAuraPlugin.OttoAuraLogger.LogDebug($"(IsItemEquiped) Removing Time {item.m_shared.m_name}");
             item.m_customData.Remove("RepairStation");
             // Set m_useDurability back to what it was
             if (!item.m_customData.TryGetValue("RepairStationUseDurability", out string? useDurabilityValue)) return;
-            RepairStationPlugin.RepairStationLogger.LogDebug($"(IsItemEquiped) Setting UseDurability {item.m_shared.m_name} {bool.Parse(useDurabilityValue)}");
+            OttoAuraPlugin.OttoAuraLogger.LogDebug($"(IsItemEquiped) Setting UseDurability {item.m_shared.m_name} {bool.Parse(useDurabilityValue)}");
             item.m_shared.m_useDurability = bool.Parse(useDurabilityValue);
             item.m_customData.Remove("RepairStationUseDurability");
         }

@@ -1,13 +1,15 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Target Name="ILRepacker" AfterTargets="Build">
         <ItemGroup>
+            <!-- Merged in, so the plugin ships as a single DLL. -->
             <InputAssemblies Include="$(TargetPath)" />
-            <InputAssemblies Include="$(OutputPath)\ServerSync.dll" />
-            <!-- Only use the line below if you choose to use the DLL and not the classes. If you choose the DLL, be sure to reference and 
-             tell it to copy to output directory-->
-            <!-- <InputAssemblies Include="$(OutputPath)\PieceManager.dll" /> -->
+            <InputAssemblies Include="$(OutputPath)ServerSync.dll" />
+            <!-- ILRepack resolves the game and BepInEx assemblies from these folders. -->
+            <ILRepackLibraryPath Include="$(OutputPath)" />
+            <ILRepackLibraryPath Include="$(BepInExPath)/core" />
+            <ILRepackLibraryPath Include="$(CorlibPath)" />
         </ItemGroup>
-        <ILRepack Parallel="true" DebugInfo="true" Internalize="true" InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)" TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath)" />
+        <ILRepack Parallel="true" DebugInfo="true" Internalize="true" InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)" TargetKind="SameAsPrimaryAssembly" LibraryPath="@(ILRepackLibraryPath)" />
     </Target>
 </Project>

@@ -4,6 +4,7 @@
 
 - Player facing text now says Merchant Bank balance instead of coin pouch, because OttoPay dropped the pouch.
 - The README describes the ward aura instead of the old repair station.
+- New icon and title art.
 
 ## 1.0.0
 

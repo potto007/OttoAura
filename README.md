@@ -1,5 +1,7 @@
 # OttoAura
 
+![OttoAura. Restore within the ward.](https://raw.githubusercontent.com/potto007/OttoAura/master/docs/images/ottoaura-title.png)
+
 Your ward heals you and repairs your gear while you stand inside it.
 
 There is nothing to build. Every vanilla ward you own, or are permitted on, gives off an aura once it is switched on, and while you stand inside it each tick restores some health and puts some durability back on the gear you wear. Point at the ward and its hover text tells you what the aura does and how far it reaches.

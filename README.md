@@ -1,89 +1,47 @@
-# Description & Information
+# OttoAura
 
-### Simple station to repair your shit. All at once or one at a time. Make it free, or cost {x} amount of {x} item. Just interact with this shit.
+Your ward heals you and repairs your gear while you stand inside it.
 
+There is nothing to build. Every vanilla ward you own, or are permitted on, gives off an aura once it is switched on, and while you stand inside it each tick restores some health and puts some durability back on the gear you wear. Point at the ward and its hover text tells you what the aura does and how far it reaches.
 
-`Version checks with itself. If installed on the server, it will kick clients who do not have it installed.`
+## How the aura works
 
-`This mod uses ServerSync, if installed on the server and all clients, it will sync all configs to client`
+Once a tick, one second by default, the mod looks for a player ward that is on, that contains you, and that lists you as creator or permitted, which is the same access a ward grants for building. If it finds one, it does two things:
 
-`This mod uses a file watcher. If the configuration file is not changed with BepInEx Configuration manager, but changed in the file directly on the server, upon file save, it will sync the changes to all clients.`
+1. It heals you for the Heal Per Second amount times the seconds since the last tick, up to your maximum health.
+2. It repairs each worn item that can be repaired by the Repair Percent Per Tick share of its maximum durability, and an item that reaches full durability shows the vanilla repaired message and effect.
 
+You can turn either part off by setting it to 0.
 
+## Paying for repairs
 
-## Special Mentions
-MadBuffoon#0001 - For the idea and the commission to make the mod.
+By default a repair costs one coin per item per tick, paid from your OttoPay Merchant Bank balance, so you need OttoPay installed and AuraPay turned on in the inventory window. The aura takes the whole tick's cost or nothing, which means a balance that runs short stops repairs rather than paying for half of them. When the balance is empty the aura tells you so once every 30 seconds, and it keeps healing.
 
-## Configuration Options
+Set Coins Per Item Tick to 0 to make repairs free, and then OttoPay is not needed at all.
 
-`1 - General`
+## Client and server
 
-Lock Configuration [Synced with Server]
-* If on, the configuration is locked and can be changed by server admins only.
-    * Default Value: On
+Install OttoAura on the server and on every client. The server checks the version of each client that joins and disconnects any client that does not have the same version. The server sends its config to the clients, and the file watcher picks up edits you make to the server's config file while it runs.
 
-`2 - Repair Station`
-Prevent Crafting Station Repair [Synced with Server]
-* If on, Players will not be able to repair items at crafting stations. They must use the Repair Station.
-  * Default Value: Off
+## Configuration
 
-`2 - Repair Station Cost`
+The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every setting below is synced from the server except Show Heal Text.
 
-Repair All Items [Synced with Server]
-* If set to true, the RepairItems() method will be called in a loop until all repairable items are repaired. If set to false, the RepairItems() method will be called once.
-    * Default Value: Off
+| Setting | Default | Range | Meaning |
+| --- | --- | --- | --- |
+| Lock Configuration | On | | Only server admins can change the config. |
+| Heal Per Second | 1 | 0 to 50 | Health restored each second inside an active ward. 0 turns healing off. |
+| Repair Percent Per Tick | 5 | 0 to 100 | Percent of an item's maximum durability restored each tick. 0 turns repair off. |
+| Coins Per Item Tick | 1 | 0 to 1000 | Coins charged to the OttoPay balance for each item repaired in a tick. 0 makes repair free. |
+| Tick Seconds | 1 | 0.25 to 30 | Seconds between aura ticks. |
+| Show Heal Text | Off | | Show a floating number on each heal tick. This setting is not synced. |
+| Prevent Crafting Station Repair | Off | | Hide the repair panel at crafting stations, so a ward aura is the only way to repair. |
 
-Use Item Multiplier [Synced with Server]
-* If set to true, the Cost Item Amount times the amount of items needing repair will be used to calculate the cost of repairing an item. If set to false, the Cost Item Amount will be used to calculate the cost of repairing an item.
-    * Default Value: Off
+## Other mods
 
-Should Cost? [Synced with Server]
-* Should using the repair station cost the player something from their inventory?
-    * Default Value: Off
+- OttoPay is needed for paid repairs, and it is not needed when Coins Per Item Tick is 0.
+- Blacksmithing changes what happens after a repair. When an item reaches full durability, it stops losing durability for a while, and that time is 10 minutes times the player's Blacksmithing skill factor once the factor reaches 0.5. The item data keys are the same ones RepairStation used, so gear repaired by RepairStation keeps its time.
 
-Cost Item [Synced with Server]
-* Item needed to use the Repair Station. Limit is 1 item: Goes by prefab name and must be a valid item the player can hold. List of vanilla items here: https://valheim-modding.github.io/Jotunn/data/objects/item-list.html
-    * Default Value: Coins
+## Credits
 
-Cost Item Amount [Synced with Server]
-* Amount of the item needed to repair all items in the inventory.
-    * Default Value: 7
-
-`piece_repairstation`
-
-Build Table Category [Synced with Server]
-* Build Category where Repair Station is available.
-    * Default Value: Misc
-
-Custom Build Category [Synced with Server]
-*
-    * Default Value:
-
-Crafting Station [Synced with Server]
-* Crafting station where Repair Station is available.
-    * Default Value: Forge
-
-Custom Crafting Station [Synced with Server]
-*
-    * Default Value:
-
-Crafting Costs [Synced with Server]
-* Item costs to craft Repair Station (Item Name:Amount:Recoverable)
-    * Default Value: Iron:30:True,Wood:10:True,SurtlingCore:3:True
-
-
-`Feel free to reach out to me on discord if you need manual download assistance.`
-
-
-# Author Information
-
-### Azumatt
-
-`DISCORD:` Azumatt#2625
-
-`STEAM:` https://steamcommunity.com/id/azumatt/
-
-For Questions or Comments, find me in the Odin Plus Team Discord or in mine:
-
-[![https://i.imgur.com/XXP6HCU.png](https://i.imgur.com/XXP6HCU.png)](https://discord.gg/Pb6bVMnFb2)
-<a href="https://discord.gg/pdHgy6Bsng"><img src="https://i.imgur.com/Xlcbmm9.png" href="https://discord.gg/pdHgy6Bsng" width="175" height="175"></a>
+OttoAura started from RepairStation 1.2.6 by Azumatt, under the MIT No Attribution license. The ward aura replaced the station, while the Blacksmithing hooks and the ServerSync plumbing came along unchanged. Bugs are mine, so report them at https://github.com/potto007/OttoAura.

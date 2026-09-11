@@ -23,7 +23,9 @@ Set Coins Per Item Tick to 0 to make repairs free, and then OttoPay is not neede
 
 ## Client and server
 
-Install OttoAura on the server and on every client. The server checks the version of each client that joins and disconnects any client that does not have the same version. The server sends its config to the clients, and the file watcher picks up edits you make to the server's config file while it runs.
+OttoAura is a client mod, so it works on a server that does not have it.
+
+If you also install it on the server, the server config wins and the clients follow it. The file watcher picks up edits you make to the server's config file while it runs. A server with the mod also checks the version of each client that joins, and it disconnects any client that does not have the same version.
 
 ## Configuration
 

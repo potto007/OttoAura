@@ -21,7 +21,7 @@ namespace OttoAura
     public class OttoAuraPlugin : BaseUnityPlugin
     {
         internal const string ModName = "OttoAura";
-        internal const string ModVersion = "1.0.0";
+        internal const string ModVersion = "1.0.1";
         internal const string Author = "potto007";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
@@ -51,7 +51,7 @@ namespace OttoAura
 
             HealPerSecond = config("2 - Aura", "Heal Per Second", 1f, new ConfigDescription("Health restored each second to a permitted player inside an active ward. 0 turns healing off.", new AcceptableValueRange<float>(0f, 50f)));
             RepairPercentPerTick = config("2 - Aura", "Repair Percent Per Tick", 5f, new ConfigDescription("Percent of an item's maximum durability restored each tick, for worn gear carried by a permitted player inside an active ward. 0 turns repair off.", new AcceptableValueRange<float>(0f, 100f)));
-            CoinsPerItemTick = config("2 - Aura", "Coins Per Item Tick", 1, new ConfigDescription("Coins taken from the OttoPay pouch for each item repaired in a tick. The player must turn AuraPay on in OttoPay. 0 makes repair free, and then OttoPay is not needed.", new AcceptableValueRange<int>(0, 1000)));
+            CoinsPerItemTick = config("2 - Aura", "Coins Per Item Tick", 1, new ConfigDescription("Coins charged to the OttoPay Merchant Bank balance for each item repaired in a tick. The player must turn AuraPay on in OttoPay. 0 makes repair free, and then OttoPay is not needed.", new AcceptableValueRange<int>(0, 1000)));
             TickSeconds = config("2 - Aura", "Tick Seconds", 1f, new ConfigDescription("Seconds between aura ticks.", new AcceptableValueRange<float>(0.25f, 30f)));
             ShowHealText = config("2 - Aura", "Show Heal Text", Toggle.Off, "If on, each heal tick shows a floating heal number.", false);
             PreventCraftingStationRepair = config("3 - Crafting Stations", "Prevent Crafting Station Repair", Toggle.Off, "If on, players cannot repair items at crafting stations and must use a ward aura.");

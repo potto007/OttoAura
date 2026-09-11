@@ -1,6 +1,6 @@
 {
   "name": "OttoAura",
-  "version_number": "1.0.0",
+  "version_number": "1.0.1",
   "website_url": "https://github.com/potto007/OttoAura",
   "description": "Build a repair station and fix everything you carry in one go. Free, or for a price you set. Based on RepairStation by Azumatt.",
   "dependencies": [

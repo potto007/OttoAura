@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace OttoAura;
 
-// The aura is local player state only: health, durability and pouch coins all belong to
+// The aura is local player state only: health, durability and the bank balance all belong to
 // the player running this client, so each client ticks for itself and no RPC is needed.
 internal static class WardAura
 {
@@ -157,7 +157,7 @@ internal static class WardAura
 
         if (Time.time - _lastEmptyPouchMessage > 30f)
         {
-            player.Message(MessageHud.MessageType.TopLeft, "Your pouch is empty. The aura cannot repair your gear.");
+            player.Message(MessageHud.MessageType.TopLeft, "Your Merchant Bank balance is empty. The aura cannot repair your gear.");
             _lastEmptyPouchMessage = Time.time;
         }
 

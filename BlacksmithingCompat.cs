@@ -99,7 +99,7 @@ static class ItemDropItemDataIsItemEquipedPatch
 }
 
 #if DEBUG
-[HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip), typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float))]
+[HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip), typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int), typeof(bool))]
 static class ItemDropItemDataGetTooltipPatch
 {
     static void Postfix(ItemDrop.ItemData item, ref string __result)

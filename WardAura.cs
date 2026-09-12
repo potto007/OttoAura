@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Reflection;
-using BepInEx.Bootstrap;
 using HarmonyLib;
 using SkillManager;
 using UnityEngine;
@@ -13,13 +11,8 @@ namespace OttoAura;
 // the player running this client, so each client ticks for itself and no RPC is needed.
 internal static class WardAura
 {
-    private const string OttoPayGuid = "potto007.OttoPay";
-
     private static readonly List<ItemDrop.ItemData> WornItems = new();
     private static float _elapsed;
-    private static bool _payBound;
-    private static MethodInfo? _isAuraPayEnabled;
-    private static MethodInfo? _tryWithdraw;
     private static float _lastEmptyPouchMessage = -1000f;
 
     internal static void Update(float deltaTime)
@@ -139,18 +132,12 @@ internal static class WardAura
 
     private static bool TryPay(Player player, int cost)
     {
-        BindOttoPay();
-        if (_isAuraPayEnabled == null || _tryWithdraw == null)
+        if (!OttoPayBridge.IsAuraPayEnabled())
         {
             return false;
         }
 
-        if (!(bool)_isAuraPayEnabled.Invoke(null, null))
-        {
-            return false;
-        }
-
-        if ((bool)_tryWithdraw.Invoke(null, new object[] { cost }))
+        if (OttoPayBridge.TryWithdraw(cost))
         {
             return true;
         }
@@ -162,29 +149,6 @@ internal static class WardAura
         }
 
         return false;
-    }
-
-    // OttoPay is optional, so it is found at runtime instead of referenced at build time.
-    private static void BindOttoPay()
-    {
-        if (_payBound)
-        {
-            return;
-        }
-
-        _payBound = true;
-        if (!Chainloader.PluginInfos.ContainsKey(OttoPayGuid))
-        {
-            return;
-        }
-
-        Type? api = AccessTools.TypeByName("OttoPay.OttoPayApi");
-        _isAuraPayEnabled = api == null ? null : AccessTools.Method(api, "IsAuraPayEnabled");
-        _tryWithdraw = api == null ? null : AccessTools.Method(api, "TryWithdraw");
-        if (_isAuraPayEnabled == null || _tryWithdraw == null)
-        {
-            OttoAuraPlugin.OttoAuraLogger.LogWarning("OttoPay is installed, but its AuraPay API was not found. Paid aura repairs are off.");
-        }
     }
 
     internal static string HoverLine(PrivateArea area)

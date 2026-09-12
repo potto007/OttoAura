@@ -1,6 +1,6 @@
 {
   "name": "OttoAura",
-  "version_number": "1.0.1",
+  "version_number": "1.1.0",
   "website_url": "https://github.com/potto007/OttoAura",
   "description": "Your ward heals you and repairs your worn gear while you stand inside it. Free, or paid from your OttoPay balance. Based on RepairStation by Azumatt.",
   "dependencies": [

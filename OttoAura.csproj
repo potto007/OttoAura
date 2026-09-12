@@ -41,6 +41,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="assets/auraboost_icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="environment.props" />
     <None Include="ILRepack.targets" />
     <None Include="README.md" />

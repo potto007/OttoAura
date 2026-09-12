@@ -9,6 +9,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using JetBrains.Annotations;
+using OttoAura.AuraBoost;
 using ServerSync;
 using UnityEngine;
 
@@ -21,7 +22,7 @@ namespace OttoAura
     public class OttoAuraPlugin : BaseUnityPlugin
     {
         internal const string ModName = "OttoAura";
-        internal const string ModVersion = "1.0.1";
+        internal const string ModVersion = "1.1.0";
         internal const string Author = "potto007";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
@@ -55,6 +56,11 @@ namespace OttoAura
             TickSeconds = config("2 - Aura", "Tick Seconds", 1f, new ConfigDescription("Seconds between aura ticks.", new AcceptableValueRange<float>(0.25f, 30f)));
             ShowHealText = config("2 - Aura", "Show Heal Text", Toggle.Off, "If on, each heal tick shows a floating heal number.", false);
             PreventCraftingStationRepair = config("3 - Crafting Stations", "Prevent Crafting Station Repair", Toggle.Off, "If on, players cannot repair items at crafting stations and must use a ward aura.");
+            AuraBoostEnabled = config("4 - AuraBoost", "Enabled", Toggle.On, "If on, Merchant Bank members with AuraPay on in OttoPay drain less stamina while running on roads and trails.");
+            AuraBoostStaminaTrail = config("4 - AuraBoost", "Stamina Usage Trail", 0.5f, new ConfigDescription("Run stamina drain on dirt paths, wood and metal, as a fraction of vanilla. 1 is vanilla, 0 is no drain.", new AcceptableValueRange<float>(0f, 1f)));
+            AuraBoostStaminaRoad = config("4 - AuraBoost", "Stamina Usage Road", 0f, new ConfigDescription("Run stamina drain on paved roads and stone, as a fraction of vanilla. 1 is vanilla, 0 is no drain.", new AcceptableValueRange<float>(0f, 1f)));
+            AuraBoostShowStatusIcon = config("4 - AuraBoost", "Show Status Icon", Toggle.On, "If on, the AuraBoost icon shows in the status bar while the effect is active.");
+            AuraBoostSprite = LoadSprite("auraboost_icon.png");
 
             if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing) && Blacksmithing != null)
             {
@@ -66,11 +72,39 @@ namespace OttoAura
             SetupWatcher();
         }
 
+        public void Start()
+        {
+            AuraBoostEffect.Init();
+        }
+
         private void Update()
         {
             WardAura.Update(Time.deltaTime);
+            AuraBoostEffect.Tick();
         }
-        
+
+        // UnityEngine.ImageConversionModule cannot be referenced from net48: its metadata
+        // names ReadOnlySpan<byte>, which lives in the game's Mono mscorlib and not in the
+        // net48 reference assemblies. The byte[] overload of LoadImage still exists, so it is
+        // bound at runtime instead.
+        private static Sprite? LoadSprite(string name)
+        {
+            MethodInfo? loadImage = AccessTools.Method("UnityEngine.ImageConversion:LoadImage", new[] { typeof(Texture2D), typeof(byte[]) });
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            using Stream? resource = assembly.GetManifestResourceStream($"{assembly.GetName().Name}.assets.{name}");
+            if (loadImage == null || resource == null)
+            {
+                OttoAuraLogger.LogError($"Could not load the {name} icon.");
+                return null;
+            }
+
+            using MemoryStream bytes = new();
+            resource.CopyTo(bytes);
+            Texture2D texture = new(0, 0);
+            loadImage.Invoke(null, new object[] { texture, bytes.ToArray() });
+            return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
+        }
+
 
         internal static void AutoDoc()
         {
@@ -101,6 +135,7 @@ namespace OttoAura
 
         private void OnDestroy()
         {
+            AuraBoostEffect.Shutdown();
             Config.Save();
         }
 
@@ -140,6 +175,11 @@ namespace OttoAura
         internal static ConfigEntry<int> CoinsPerItemTick = null!;
         internal static ConfigEntry<float> TickSeconds = null!;
         internal static ConfigEntry<Toggle> ShowHealText = null!;
+        internal static ConfigEntry<Toggle> AuraBoostEnabled = null!;
+        internal static ConfigEntry<float> AuraBoostStaminaTrail = null!;
+        internal static ConfigEntry<float> AuraBoostStaminaRoad = null!;
+        internal static ConfigEntry<Toggle> AuraBoostShowStatusIcon = null!;
+        internal static Sprite? AuraBoostSprite;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {

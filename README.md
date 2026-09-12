@@ -21,6 +21,12 @@ By default a repair costs one coin per item per tick, paid from your OttoPay Mer
 
 Set Coins Per Item Tick to 0 to make repairs free, and then OttoPay is not needed at all.
 
+## AuraBoost
+
+The magic of AuraPay makes you feel invigorated and lighter on your feet! As a result, you drain less stamina when you stay on the roads and trails. Once you have joined the Merchant Bank and turned AuraPay on in OttoPay, running on dirt paths, wood and metal drains half the usual stamina, and paved roads and stone drain none. A status icon shows while it is working. AuraBoost costs no coins, and it works anywhere, not only inside a ward.
+
+Only things players make count. Terrain counts when it is clearly hoed into a path or paved. Built pieces count by material: stone, marble, ashstone and ancient pieces are roads, and wood, hardwood, timberwood and iron are trails.
+
 ## Client and server
 
 OttoAura is a client mod, so it works on a server that does not have it.
@@ -40,10 +46,16 @@ The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every s
 | Tick Seconds | 1 | 0.25 to 30 | Seconds between aura ticks. |
 | Show Heal Text | Off | | Show a floating number on each heal tick. This setting is not synced. |
 | Prevent Crafting Station Repair | Off | | Hide the repair panel at crafting stations, so a ward aura is the only way to repair. |
+| AuraBoost: Enabled | On | | Bank members with AuraPay on drain less stamina running on roads and trails. |
+| AuraBoost: Stamina Usage Trail | 0.5 | 0 to 1 | Run stamina drain on dirt paths, wood and metal. 0 is none and 1 is vanilla. |
+| AuraBoost: Stamina Usage Road | 0 | 0 to 1 | Run stamina drain on paved roads and stone. 0 is none and 1 is vanilla. |
+| AuraBoost: Show Status Icon | On | | Show the AuraBoost icon in the status bar while the effect is active. |
 
 ## Other mods
 
-- OttoPay is needed for paid repairs, and it is not needed when Coins Per Item Tick is 0.
+- OttoPay is needed for paid repairs, and it is not needed when Coins Per Item Tick is 0. AuraBoost always needs OttoPay, because it only works while AuraPay is on.
+- AuraBoost does not stack with run stamina discounts that other mods add through their own status effects. When one is active, the bigger discount wins. Food, meads, Moder's power and item mods built on the game's own status effect types still stack with AuraBoost as usual.
+- Do not run AuraBoost next to the unreleased OttoPay 1.4.0 build that had AuraPay Pathwalk. Both discounts would apply.
 - Blacksmithing changes what happens after a repair. When an item reaches full durability, it stops losing durability for a while, and that time is 10 minutes times the player's Blacksmithing skill factor once the factor reaches 0.5. The item data keys are the same ones RepairStation used, so gear repaired by RepairStation keeps its time.
 
 ## Credits

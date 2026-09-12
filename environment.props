@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Local machine paths. Edit this file, not the .csproj. -->
+<!-- Local machine paths. Edit this file, not the .csproj. BepInExPath is the Gale profile. -->
 <Project>
     <!-- Windows build (Visual Studio / Rider on the Windows side). -->
     <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
         <ValheimGamePath>C:\Program Files (x86)\Steam\steamapps\common\Valheim</ValheimGamePath>
-        <BepInExPath>C:\Users\paulo\AppData\Roaming\r2modmanPlus-local\Valheim\profiles\Default\BepInEx</BepInExPath>
+        <BepInExPath>C:\Users\paulo\AppData\Roaming\com.kesomannen.gale\valheim\profiles\Default\BepInEx</BepInExPath>
         <CorlibPath>$(ValheimGamePath)\valheim_Data\Managed</CorlibPath>
         <CopyOutputDLLPath>$(BepInExPath)\plugins\potto007-OttoAura</CopyOutputDLLPath>
     </PropertyGroup>
@@ -12,7 +12,7 @@
     <!-- WSL / Linux build against the same Windows install through /mnt/c. -->
     <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
         <ValheimGamePath>/mnt/c/Program Files (x86)/Steam/steamapps/common/Valheim</ValheimGamePath>
-        <BepInExPath>/mnt/c/Users/paulo/AppData/Roaming/r2modmanPlus-local/Valheim/profiles/Default/BepInEx</BepInExPath>
+        <BepInExPath>/mnt/c/Users/paulo/AppData/Roaming/com.kesomannen.gale/valheim/profiles/Default/BepInEx</BepInExPath>
         <CorlibPath>$(ValheimGamePath)/valheim_Data/Managed</CorlibPath>
         <CopyOutputDLLPath>$(BepInExPath)/plugins/potto007-OttoAura</CopyOutputDLLPath>
     </PropertyGroup>

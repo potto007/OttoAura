@@ -18,7 +18,7 @@ namespace OttoAura
     [BepInPlugin(ModGUID, ModName, ModVersion)]
     [BepInDependency("org.bepinex.plugins.blacksmithing", BepInDependency.DependencyFlags.SoftDependency)]
     // Repairs and AuraBoost both run through AuraPay, so OttoAura does not load without OttoPay.
-    [BepInDependency("potto007.OttoPay", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("potto007.OttoPay", "1.4.0")]
     public class OttoAuraPlugin : BaseUnityPlugin
     {
         internal const string ModName = "OttoAura";

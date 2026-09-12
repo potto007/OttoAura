@@ -3,6 +3,7 @@
 ## 1.1.0
 
 - AuraBoost. The magic of AuraPay makes you feel invigorated and lighter on your feet! Merchant Bank members with AuraPay on in OttoPay drain less stamina while running on roads and trails.
+- OttoPay is now a required dependency. OttoAura does not load without it, even when repairs are free.
 - New server synced settings under `4 - AuraBoost`: `Enabled`, `Stamina Usage Trail`, `Stamina Usage Road` and `Show Status Icon`.
 - AuraBoost does not stack with run stamina discounts from other mods' own status effects. When one is active, the bigger discount wins.
 

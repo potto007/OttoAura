@@ -4,6 +4,7 @@
   "website_url": "https://github.com/potto007/OttoAura",
   "description": "Your ward heals you and repairs your worn gear while you stand inside it. Free, or paid from your OttoPay balance. Based on RepairStation by Azumatt.",
   "dependencies": [
-    "denikson-BepInExPack_Valheim-5.4.2350"
+    "denikson-BepInExPack_Valheim-5.4.2350",
+    "potto007-OttoPay-1.3.0"
   ]
 }

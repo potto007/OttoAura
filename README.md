@@ -54,9 +54,7 @@ The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every s
 ## Other mods
 
 - OttoPay is needed for paid repairs, and it is not needed when Coins Per Item Tick is 0. AuraBoost always needs OttoPay, because it only works while AuraPay is on.
-- AuraBoost does not stack with run stamina discounts that other mods add through their own status effects. When one is active, the bigger discount wins. Food, meads, Moder's power and item mods built on the game's own status effect types still stack with AuraBoost as usual.
-- Do not run AuraBoost next to the unreleased OttoPay 1.4.0 build that had AuraPay Pathwalk. Both discounts would apply.
-- Blacksmithing changes what happens after a repair. When an item reaches full durability, it stops losing durability for a while, and that time is 10 minutes times the player's Blacksmithing skill factor once the factor reaches 0.5. The item data keys are the same ones RepairStation used, so gear repaired by RepairStation keeps its time.
+- AuraBoost does not stack with run stamina discounts that other mods add through their own status effects. When one is active, the bigger discount wins. Food, meads, Moder's power and item mods built on the game's own status effect types still stack with AuraBoost as usual.- Blacksmithing changes what happens after a repair. When an item reaches full durability, it stops losing durability for a while, and that time is 10 minutes times the player's Blacksmithing skill factor once the factor reaches 0.5. The item data keys are the same ones RepairStation used, so gear repaired by RepairStation keeps its time.
 
 ## Credits
 

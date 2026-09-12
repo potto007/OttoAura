@@ -100,17 +100,27 @@
     <Error Condition="!Exists('$(MSBuildProjectDirectory)/Thunderstore/icon.png')" Text="Thunderstore/icon.png is missing. It must be 256x256." />
     <!-- A published version is frozen on Thunderstore. Rebuilding its zip makes the
          committed artifact drift from what shipped, and nothing downstream notices.
-         Pass -p:AllowRepackPublished=true only to rebuild one on purpose. -->
-    <PropertyGroup>
-      <_TagRefFile>$(MSBuildProjectDirectory)/.git/refs/tags/v$(PackageVersion)</_TagRefFile>
-      <_PackedRefs Condition="Exists('$(MSBuildProjectDirectory)/.git/packed-refs')">$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/.git/packed-refs'))</_PackedRefs>
-      <_TagIsPacked Condition="'$(_PackedRefs)' != ''">$(_PackedRefs.Contains('refs/tags/v$(PackageVersion)'))</_TagIsPacked>
-    </PropertyGroup>
-    <Error Condition="'$(AllowRepackPublished)' != 'true' AND (Exists('$(_TagRefFile)') OR '$(_TagIsPacked)' == 'True')" Text="Version $(PackageVersion) is already tagged as v$(PackageVersion), so it is published and frozen. Bump the version in Plugin.cs and Thunderstore/manifest.json, or pass -p:AllowRepackPublished=true." />
+         Pass -p:AllowRepackPublished=true only to rebuild one on purpose.
+         Git is asked instead of reading .git directly: in a worktree .git is a file and the
+         tags live in the main checkout, so a file check silently passes there. -->
+    <Exec Command="git tag --list v$(PackageVersion)" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" StandardOutputImportance="low" Condition="'$(AllowRepackPublished)' != 'true'">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_PublishedTag" />
+    </Exec>
+    <Error Condition="'$(AllowRepackPublished)' != 'true' AND '$(_PublishedTag)' != ''" Text="Version $(PackageVersion) is already tagged as v$(PackageVersion), so it is published and frozen. Bump the version in Plugin.cs and Thunderstore/manifest.json, or pass -p:AllowRepackPublished=true." />
     <Copy SourceFiles="@(PackageFiles)" DestinationFolder="$(PackageStageDir)" />
     <ZipDirectory SourceDirectory="$(PackageStageDir)" DestinationFile="$(PackageZip)" Overwrite="true" />
-    <!-- A zip that fails the package check is not shippable, so the build fails with it. -->
-    <Exec Command="python3 &quot;$(MSBuildProjectDirectory)/../OttoModTools/tools/verify_package.py&quot; &quot;$(PackageZip)&quot;" Condition="Exists('$(MSBuildProjectDirectory)/../OttoModTools/tools/verify_package.py')" />
+    <!-- A zip that fails the package check is not shippable, so the build fails with it.
+         OttoModTools sits next to the main checkout, which a worktree is not, so the path is
+         found through git. Pass -p:OttoModToolsPath=... to point somewhere else. -->
+    <Exec Command="git rev-parse --path-format=absolute --git-common-dir" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" StandardOutputImportance="low" Condition="'$(OttoModToolsPath)' == ''">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitCommonDir" />
+    </Exec>
+    <PropertyGroup>
+      <OttoModToolsPath Condition="'$(OttoModToolsPath)' == ''">$([System.IO.Path]::GetFullPath('$(_GitCommonDir)/../../OttoModTools'))</OttoModToolsPath>
+      <_VerifyPackageScript>$(OttoModToolsPath)/tools/verify_package.py</_VerifyPackageScript>
+    </PropertyGroup>
+    <Warning Condition="!Exists('$(_VerifyPackageScript)')" Text="$(_VerifyPackageScript) was not found, so the package was not verified. Pass -p:OttoModToolsPath=... to run the check." />
+    <Exec Command="python3 &quot;$(_VerifyPackageScript)&quot; &quot;$(PackageZip)&quot;" Condition="Exists('$(_VerifyPackageScript)')" />
     <Message Importance="high" Text="Thunderstore package: $(PackageZip)" />
   </Target>
 

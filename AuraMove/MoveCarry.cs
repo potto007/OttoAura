@@ -213,22 +213,44 @@ static class Player_RemovePiece_Patch
 // Selecting another piece, another category, or another tool drops the carry. These are prefixes
 // because each of them goes on to rebuild the placement ghost, and the carry has to be gone
 // before that happens or vanilla builds a ghost of the object the player just stopped moving.
+//
+// Each one is guarded on the local player. The carry belongs to this client alone, and these are
+// ordinary Player methods: another Player instance running one of them - a remote character, or
+// anything a second mod drives - must not let go of what the Guild is holding here.
 [HarmonyPatch(typeof(Player), nameof(Player.SetSelectedPiece), typeof(Vector2Int))]
 static class Player_SetSelectedPiece_Patch
 {
-    static void Prefix() => MoveCarry.Drop(rebuildGhost: true);
+    static void Prefix(Player __instance)
+    {
+        if (__instance == Player.m_localPlayer)
+        {
+            MoveCarry.Drop(rebuildGhost: true);
+        }
+    }
 }
 
 [HarmonyPatch(typeof(Player), nameof(Player.SetBuildCategory), typeof(int))]
 static class Player_SetBuildCategoryIndex_Patch
 {
-    static void Prefix() => MoveCarry.Drop(rebuildGhost: false);
+    static void Prefix(Player __instance)
+    {
+        if (__instance == Player.m_localPlayer)
+        {
+            MoveCarry.Drop(rebuildGhost: false);
+        }
+    }
 }
 
 [HarmonyPatch(typeof(Player), nameof(Player.SetBuildCategory), typeof(Piece.PieceCategory))]
 static class Player_SetBuildCategory_Patch
 {
-    static void Prefix() => MoveCarry.Drop(rebuildGhost: false);
+    static void Prefix(Player __instance)
+    {
+        if (__instance == Player.m_localPlayer)
+        {
+            MoveCarry.Drop(rebuildGhost: false);
+        }
+    }
 }
 
 // SetPlaceMode runs on every equipment change, so it covers putting the hammer away, swapping to
@@ -236,7 +258,13 @@ static class Player_SetBuildCategory_Patch
 [HarmonyPatch(typeof(Player), nameof(Player.SetPlaceMode))]
 static class Player_SetPlaceMode_Patch
 {
-    static void Prefix() => MoveCarry.Drop(rebuildGhost: false);
+    static void Prefix(Player __instance)
+    {
+        if (__instance == Player.m_localPlayer)
+        {
+            MoveCarry.Drop(rebuildGhost: false);
+        }
+    }
 }
 
 // Belt and braces. The pseudo-piece is not a thing that can exist in the world, so it is never

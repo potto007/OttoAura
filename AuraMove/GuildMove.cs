@@ -107,6 +107,21 @@ internal static class GuildMove
 
     internal static void Shutdown()
     {
+        // Take the piece and the category back out of the hammer before the prefab goes. Nothing
+        // runs InjectInto again once _pseudoPiece is null, so a category left behind would sit in
+        // the build menu for the rest of the session as a tab with nothing in it.
+        if (_hammerTable != null && _pseudoPiece != null)
+        {
+            _hammerTable.m_enabledPieces.Remove(_pseudoPiece);
+            _hammerTable.m_availablePieces.Remove(_pseudoPiece);
+            if (_hammerTable.m_availablePiecesByCategory.Count > (int)Category)
+            {
+                _hammerTable.m_availablePiecesByCategory[(int)Category].Remove(_pseudoPiece);
+            }
+
+            SyncCategory(_hammerTable, available: false);
+        }
+
         if (_prefab != null)
         {
             UnityEngine.Object.Destroy(_prefab);
@@ -114,6 +129,7 @@ internal static class GuildMove
 
         _prefab = null;
         _pseudoPiece = null;
+        _hammerTable = null;
         _describedFor = "";
         _describedCoins = -1;
         _describedDistance = -1f;
@@ -225,8 +241,18 @@ internal static class GuildMove
         {
             if (index < 0)
             {
+                // Hud.UpdateBuild reads m_categoryLabels[i] for category i, so the label has to
+                // land on the same index the category takes, not merely at the end of its own
+                // list. The two lists match on the vanilla hammer; padding covers a table where
+                // they do not, and keeps the tab from showing somebody else's label.
+                int slot = table.m_categories.Count;
                 table.m_categories.Add(Category);
-                table.m_categoryLabels.Add(CategoryLabel);
+                while (table.m_categoryLabels.Count <= slot)
+                {
+                    table.m_categoryLabels.Add("");
+                }
+
+                table.m_categoryLabels[slot] = CategoryLabel;
             }
 
             return;

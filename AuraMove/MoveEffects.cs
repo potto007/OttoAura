@@ -273,12 +273,11 @@ internal static class MoveEffects
         Spawn(OttoAuraPlugin.AuraMoveArriveEffects.Value, toPosition, Quaternion.identity, isGrab: false);
 
         // The piece's own place effect is the exact sound and sparkle the game ships for placing
-        // that piece, so it rides along with the arrival where the piece has one. Vanilla owns the
-        // lifetime of what Create spawns, exactly as it does when the piece is built by hand.
+        // that piece, so it rides along with the arrival where the piece has one.
         Piece? piece = movedObject.GetComponent<Piece>();
         if (piece != null && HasUsablePlaceEffect(piece))
         {
-            piece.m_placeEffect.Create(toPosition, toRotation);
+            PlayPlaceEffect(piece, toPosition, toRotation);
         }
 
         if (seconds > 0f)
@@ -311,20 +310,63 @@ internal static class MoveEffects
         Finish(id, tween);
     }
 
+    // Vanilla plays a place effect on the placing client alone. This one runs inside the RPC
+    // handler, so it plays on every client that has the object loaded, and it goes through
+    // m_forceDisableInit like everything else here: EffectList.Create instantiates plainly, and a
+    // place effect carrying a ZNetView would otherwise claim one ZDO per client for the same puff
+    // of smoke. The instances are tracked for the same reason the rest are - with the ZNetView
+    // gone, the prefab's own cleanup is no longer something to rely on.
+    private static void PlayPlaceEffect(Piece piece, Vector3 position, Quaternion rotation)
+    {
+        GameObject[] created;
+        bool previous = ZNetView.m_forceDisableInit;
+        ZNetView.m_forceDisableInit = true;
+        try
+        {
+            created = piece.m_placeEffect.Create(position, rotation);
+        }
+        finally
+        {
+            ZNetView.m_forceDisableInit = previous;
+        }
+
+        float expiresAt = Time.time + EffectLifetime;
+        foreach (GameObject instance in created)
+        {
+            if (instance != null)
+            {
+                _spawned.Add(new Spawned { Obj = instance, ExpiresAt = expiresAt, IsGrab = false });
+            }
+        }
+    }
+
+    // Every enabled entry has to carry a prefab, not merely one of them: EffectList.Create walks
+    // them all and instantiates each without a null check, so a single blank entry would throw
+    // inside the RPC handler and take the rest of the arrival with it.
     private static bool HasUsablePlaceEffect(Piece piece)
     {
         if (piece.m_placeEffect?.m_effectPrefabs == null)
         {
             return false;
         }
+
+        bool usable = false;
         foreach (EffectList.EffectData entry in piece.m_placeEffect.m_effectPrefabs)
         {
-            if (entry.m_enabled && entry.m_prefab != null)
+            if (!entry.m_enabled)
             {
-                return true;
+                continue;
             }
+
+            if (entry.m_prefab == null)
+            {
+                return false;
+            }
+
+            usable = true;
         }
-        return false;
+
+        return usable;
     }
 
     // Travel is a single prefab. Take the first name if somebody pastes a list into it anyway,

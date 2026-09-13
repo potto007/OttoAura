@@ -37,7 +37,7 @@ With Guild Move selected, look at a chest, a lantern, a piece of furniture or a 
 
 The move is a small conjuring. A summoning ring lights up at the object's feet the moment the Guild takes hold. On the confirming click the old spot flares and the object shrinks away, a wisp carries it across, and it grows back in at the new spot over a spirit summon and a runestone chime. Other players on the server see the same thing, because the effects are played from the same message that carries the new position, and the position itself goes through the object's ZDO. Chest contents and bed spawn points follow it. Set Shimmer Seconds to 0 if you would rather it just snapped.
 
-Some things cannot be moved. The Guild will not touch vehicles, live wards, armed traps or active shield generators. Workbenches and stonecutters are load-bearing build infrastructure and stay where they are. Plants are rooted. Any chest that another player has open is off limits. By default, non-furniture pieces that carry structural load are immovable too, so the building itself cannot shift; you can turn that rule off with the Support Is Immovable setting. The Allowed Prefabs and Denied Prefabs lists let you grant or block particular objects by prefab name regardless of the other rules.
+Some things cannot be moved. The Guild will not touch vehicles, live wards, armed traps or active shield generators. Building pieces such as walls, floors and beams stay where they are, but every crafting station, from the workbench to the forge and the cauldron, can be moved. Plants are rooted. Any chest that another player has open is off limits. By default, other pieces that carry structural load are immovable too, so the building itself cannot shift; you can turn that rule off with the Support Is Immovable setting. The Allowed Prefabs and Denied Prefabs lists let you grant or block particular objects by prefab name regardless of the other rules.
 
 ## Client and server
 
@@ -65,7 +65,7 @@ The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every s
 | AuraMove: Enabled | On | | Turn the Guild move service off entirely. |
 | AuraMove: Coins | 5 | 0 to 1000 | Coins charged to the Merchant Bank balance per completed move. 0 makes moving free, but AuraPay must still be on. |
 | AuraMove: Max Move Distance | 10 | 1 to 64 | How far in metres the destination may sit from where the object stands now. |
-| AuraMove: Support Is Immovable | On | | Non-furniture pieces that carry structural load cannot be moved. |
+| AuraMove: Support Is Immovable | On | | Pieces that carry structural load cannot be moved. Furniture and crafting stations are exempt. |
 | AuraMove: Allowed Prefabs | wood_fine_stack,... | | Comma-separated prefab names that skip every eligibility restriction and can always be moved. |
 | AuraMove: Denied Prefabs | fire_pit,... | | Comma-separated prefab names that can never be moved. |
 | AuraMove: Shimmer Seconds | 1.2 | 0 to 3 | Total duration of the shrink and grow animation. 0 snaps and only plays the stage effects. |

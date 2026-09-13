@@ -227,7 +227,14 @@ wisp, and fires Depart, Arrive and Finish on the same frame.
 the exact sound and sparkle the game ships for placing that piece, so where a piece has one it
 grounds the arrival in the object's own material. It is no longer used at the old spot, and it is no
 longer a fallback: the config stages are the choreography, and the place effect rides along with
-them.
+them. It goes out through `MoveEffects.PlayPlaceEffect`, which spawns it under
+`ZNetView.m_forceDisableInit` and tracks the instances like every other stage. Vanilla plays a
+place effect on the placing client alone; this one plays inside the RPC handler on every client
+that has the object loaded, and `EffectList.Create` instantiates plainly, so without the flag a
+place effect carrying a `ZNetView` would claim one ZDO per client for the same puff of smoke. The
+effect is skipped altogether unless every enabled entry in the list carries a prefab: `Create`
+walks them all and instantiates each without a null check, so one blank entry would throw inside
+the RPC handler and take the rest of the arrival with it.
 
 **Travel path.** The wisp is instantiated at the old spot and its transform is written each frame
 along `Vector3.Lerp(from, to, t)` plus a sine hump, so it leaves and lands on the ground and rides
@@ -423,5 +430,10 @@ pause menu; right click is the cancel now, so Escape does what it always did.
   would accept it. The Guild is exactly as fussy as the hammer, no more.
 - Taking hold costs the hammer's attack stamina check, so a click with an empty stamina bar
   flashes the bar instead of grabbing. Nothing is charged.
+- The right click cancel sits behind the same stamina check, because `Player.UpdatePlacement`
+  gates its whole remove branch on it before `Player.RemovePiece` is ever called. With an empty
+  bar the Guild keeps hold until stamina comes back. Every other way out of a carry - picking
+  another piece, another tab, stowing the hammer, walking away - is unaffected, and nothing is
+  charged either way.
 - Where the HUD prefab carries no category tabs, the Merchant Guild tab cannot be drawn. The piece
   is still in the modern build menu under the Misc usage tag.

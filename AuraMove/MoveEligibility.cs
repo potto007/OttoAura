@@ -47,7 +47,8 @@ internal static class MoveEligibility
             return MoveDenial.DeniedPrefab;
         }
 
-        // 5. Workbenches (2) and stonecutters (3) are build infrastructure; furniture (4) is fine.
+        // 5. Building pieces, the walls, floors and beams filed under the workbench (2) and
+        //    stonecutter (3) build tabs, stay put. Crafting stations (1) and furniture (4) pass.
         Piece.PieceCategory category = piece.m_category;
         if (category == Piece.PieceCategory.BuildingWorkbench || category == Piece.PieceCategory.BuildingStonecutter)
         {
@@ -125,9 +126,14 @@ internal static class MoveEligibility
             }
         }
 
-        // 16. When Support Is Immovable is on, non-furniture pieces that carry load stay where they are.
+        // 16. When Support Is Immovable is on, pieces that carry load stay where they are, unless
+        //     they are furniture or crafting stations. A workbench or forge may report m_supports,
+        //     but nobody builds a roof on one, and the owner wants every crafting table movable.
         if (OttoAuraPlugin.AuraMoveSupportImmovable.Value == OttoAuraPlugin.Toggle.On
             && piece.m_category != Piece.PieceCategory.Furniture
+            && piece.m_category != Piece.PieceCategory.Crafting
+            && !piece.GetComponent<CraftingStation>()
+            && !piece.GetComponent<StationExtension>()
             && piece.TryGetComponent<WearNTear>(out var wnt)
             && wnt.m_supports)
         {
@@ -143,7 +149,7 @@ internal static class MoveEligibility
         MoveDenial.NoPlayer         => "",
         MoveDenial.NotPlacedByPlayer => "The Guild only moves things a player put there.",
         MoveDenial.DeniedPrefab     => "The Guild does not move that.",
-        MoveDenial.BuildingPiece    => "The Guild will not disturb a load-bearing station.",
+        MoveDenial.BuildingPiece    => "The Guild will not pull a building piece out of a building.",
         MoveDenial.Warded           => "Another jarl's ward holds this in place.",
         MoveDenial.Vehicle          => "The Guild does not move vehicles.",
         MoveDenial.Plant            => "Let the plant grow where it stands.",

@@ -99,7 +99,7 @@ key binding belongs to the client, the same split OttoRedecorate uses.
 | Enabled | `AuraMoveEnabled` | Toggle | On | | yes | Turns the service off entirely. |
 | Coins | `AuraMoveCoins` | int | 5 | 0-1000 | yes | Coins charged per completed move. 0 makes moving free, but AuraPay must still be on. |
 | Max Move Distance | `AuraMoveMaxDistance` | float | 10 | 1-64 | yes | Metres the destination may sit from where the object stands now. |
-| Support Is Immovable | `AuraMoveSupportImmovable` | Toggle | On | | yes | Nothing that carries load can move, except furniture. |
+| Support Is Immovable | `AuraMoveSupportImmovable` | Toggle | On | | yes | Nothing that carries load can move, except furniture and crafting stations. |
 | Allowed Prefabs | `AuraMoveAllowedPrefabs` | string | `wood_fine_stack,blackwood_stack,bone_stack,piece_beehive` | | yes | Comma separated prefab names that skip every later rule. |
 | Denied Prefabs | `AuraMoveDeniedPrefabs` | string | `fire_pit,bonfire,hearth,windmill` | | yes | Comma separated prefab names that can never move. |
 | Shimmer Seconds | `AuraMoveShimmerSeconds` | float | 1.2 | 0-3 | yes | Length of the shrink and the grow together. 0 snaps and only plays the stage effects. |
@@ -139,7 +139,8 @@ can say why.
 3. Prefab name (`Utils.GetPrefabName(piece.gameObject.name)`) in **Allowed Prefabs** -> allow, skip the rest.
 4. Prefab name in **Denied Prefabs** -> deny.
 5. `piece.m_category` is `BuildingWorkbench` (2) or `BuildingStonecutter` (3) -> deny. These are the
-   load-bearing build pieces; `Furniture` is 4 and passes.
+   building pieces (walls, floors, beams) filed under those build tabs, not the stations
+   themselves; `Crafting` is 1 and `Furniture` is 4, and both pass.
 6. `!PrivateArea.CheckAccess(piece.transform.position, 0f, flashWard, false)` -> deny, warded ground.
 7. `Vagon` -> deny (carts). `Ship` -> deny.
 8. `piece.m_inCeilingOnly` -> allow, skip the rest.
@@ -151,7 +152,8 @@ can say why.
 14. `Aoe` in children with `m_useAttackSettings` and no `Fireplace` on the piece -> deny (stakes).
 15. `Container`: `!CheckAccess(localPlayer.GetPlayerID())` -> deny; `IsInUse()` or
     `m_open && m_open.activeSelf` -> deny (someone has it open).
-16. **Support Is Immovable** on, `m_category != Furniture`, `WearNTear.m_supports` -> deny.
+16. **Support Is Immovable** on, `m_category` neither `Furniture` nor `Crafting`, no `CraftingStation`
+    or `StationExtension` component, `WearNTear.m_supports` -> deny. Crafting tables are always movable.
 17. Otherwise allow.
 
 ## Relocation mechanism

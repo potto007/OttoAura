@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1
+
+- Every crafting station can be moved, from the workbench to the forge, the cauldron and their extensions. Building pieces such as walls, floors and beams still stay put.
+- The Thunderstore description no longer mentions the mod OttoAura started from; the credit stays in the README.
+
 ## 1.2.0
 
 - AuraMove. While AuraPay is on, the Merchant Guild picks a placed object up and sets it down a short distance away for a small coin fee, contents and state intact, so you do not have to smash it and rebuild.

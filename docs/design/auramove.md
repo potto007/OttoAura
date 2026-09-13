@@ -20,7 +20,7 @@ network traffic is one routed RPC that carries the new position and rotation.
    camera (`Player.m_removeRayMask`, 50 m, hit inside `Player.m_maxPlaceDistance` of `m_eye`,
    `GetComponentInParent<Piece>()`) finds the piece. If the piece passes the eligibility rules a
    prompt is appended to the crosshair hover name: `The Guild will move this for N coins [key]`.
-2. **Grab.** The AuraMove key (default keyboard `LeftAlt + V`, gamepad `JoyAltKeys` + `JoyButtonY`)
+2. **Grab.** The AuraMove key (default keyboard `LeftAlt + M`, gamepad `JoyAltKeys` + `JoyButtonY`)
    starts the move. Nothing is charged yet. A placement ghost of the same prefab appears, the real
    object stays visible where it is, and a TopLeft message says the Guild has taken hold of it.
 3. **Aim.** The ghost follows `Player.PieceRayTest` each frame, is rotated by the mouse wheel or the
@@ -56,13 +56,19 @@ key binding belongs to the client, the same split OttoRedecorate uses.
 | Denied Prefabs | `AuraMoveDeniedPrefabs` | string | `fire_pit,bonfire,hearth,windmill` | | yes | Comma separated prefab names that can never move. |
 | Shimmer Seconds | `AuraMoveShimmerSeconds` | float | 0.6 | 0-3 | yes | Length of the fade out and fade in together. 0 snaps and only plays the effects. |
 | Effect Prefabs | `AuraMoveEffectPrefabs` | string | `vfx_Place_wood_pole,sfx_build_cultivator` | | yes | Fallback effect prefabs, used only when the moved piece has no place effect of its own. |
-| Move Key | `AuraMoveKey` | KeyboardShortcut | `V + LeftAlt` | | no | Grab and confirm. |
+| Move Key | `AuraMoveKey` | KeyboardShortcut | `M + LeftAlt` | | no | Grab and confirm. |
 | Gamepad Modifier | `AuraMoveGamepadModifier` | string | `JoyAltKeys` | | no | ZInput button held with the gamepad button. Empty means no modifier. |
 | Gamepad Button | `AuraMoveGamepadButton` | string | `JoyButtonY` | | no | ZInput button that grabs and confirms. |
 
 Defaults chosen against the vanilla binding table in `ZInput.Reset` (verified in
-`assembly_utils_publicized.dll`): no vanilla action binds `V`, and `JoyAltKeys` is vanilla's own
-alternate-layer modifier, so the pair only fires when the player asks for it.
+`assembly_utils_publicized.dll`): `M` is vanilla's Map button (ZInput line ~2997:
+`AddButton("Map", KeyToPath(Key.M), altKey: false, ...)`). `Minimap.Update` calls
+`SetMapMode(Large)` on `ZInput.GetButtonDown("Map")` regardless of whether Alt is held, so
+`Alt+M` would open the large map as a side effect of grabbing a piece. A Harmony prefix on
+`Minimap.SetMapMode(Minimap.MapMode mode)` skips the `Large` transition for exactly the frame
+that `MoveTargeting.KeyboardShortcutDown` is true (shortcut down, AuraMove available, input not
+blocked). `Small` and `None` are never blocked, so the map can always close. `JoyAltKeys` is
+vanilla's own alternate-layer modifier, so the gamepad pair only fires when the player asks for it.
 
 ## Eligibility rules
 

@@ -276,3 +276,18 @@ static class Menu_Show_Patch
         return !AuraMoveController.CancelForMenuKey();
     }
 }
+
+// Alt+M opens AuraMove, but vanilla registers its "Map" button on Key.M with altKey:false
+// (ZInput line ~2997), and Minimap.Update calls SetMapMode(Large) on GetButtonDown("Map")
+// regardless of Alt. Script execution order between OttoAura.Update and Minimap.Update is
+// undefined, so a ResetButtonStatus consume alone is not enough to prevent both from firing on
+// the same frame. Skip the Large map transition for exactly the frame that the AuraMove shortcut
+// is down. Small and None are never blocked, so the player can always close the map.
+[HarmonyPatch(typeof(Minimap), nameof(Minimap.SetMapMode))]
+static class Minimap_SetMapMode_Patch
+{
+    private static bool Prefix(Minimap.MapMode mode)
+    {
+        return !(mode == Minimap.MapMode.Large && MoveTargeting.KeyboardShortcutDown);
+    }
+}

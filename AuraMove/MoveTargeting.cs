@@ -35,6 +35,15 @@ internal static class MoveTargeting
 
     internal static Piece? Hovered => _hovered;
 
+    // True on the frame the AuraMove keyboard shortcut fires and AuraMove is ready to act.
+    // Used by the Minimap.SetMapMode prefix to suppress the Large map when Alt+M grabs a piece:
+    // vanilla's "Map" button fires on Key.M with no altKey guard, so Minimap.Update would open
+    // the large map on the same frame that AuraMove receives its grab key.
+    internal static bool KeyboardShortcutDown =>
+        AuraMoveController.IsAvailable
+        && !InputBlocked
+        && OttoAuraPlugin.AuraMoveKey.Value.IsDown();
+
     // True when AuraMove must ignore all input: menus open, build mode, dead/teleporting, etc.
     internal static bool InputBlocked
     {

@@ -31,7 +31,7 @@ Only things players make count. Terrain counts when it is clearly hoed into a pa
 
 While AuraPay is on, the Merchant Guild offers one more service: for a small coin fee it picks a placed object up and sets it down a short distance away, contents and state intact, so you do not have to smash it and build a new one. Look at a chest, a lantern, a piece of furniture or a beehive with empty hands. If the Guild is willing to move it, the hover text says so and names the key.
 
-Press that key to grab the object. A placement ghost appears where you are looking while the real object stays put, and you aim it the way you aim a build piece: the mouse wheel or the gamepad rotate buttons turn it, and the ghost goes red wherever the Guild will not set it down, including anywhere past Max Move Distance from where the object stands now. Press the key again to confirm. The fee comes out of your OttoPay Merchant Bank balance whole or nothing, the same way repairs do, so a balance that runs short moves nothing and charges nothing. Escape, or the gamepad B button, lets go at no cost, and so does dying, teleporting or taking out a build tool.
+The AuraPay panel in the inventory reminds you of the current key. Press that key to grab the object. A placement ghost appears where you are looking while the real object stays put, and you aim it the way you aim a build piece: the mouse wheel or the gamepad rotate buttons turn it, and the ghost goes red wherever the Guild will not set it down, including anywhere past Max Move Distance from where the object stands now. Press the key again to confirm. The fee comes out of your OttoPay Merchant Bank balance whole or nothing, the same way repairs do, so a balance that runs short moves nothing and charges nothing. Escape, or the gamepad B button, lets go at no cost, and so does dying, teleporting or taking out a build tool.
 
 The object fades out where it stood and fades back in at the new spot. Other players on the server see the move too, because the new position goes through the object's ZDO. Chest contents and bed spawn points follow it.
 
@@ -68,13 +68,13 @@ The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every s
 | AuraMove: Denied Prefabs | fire_pit,... | | Comma-separated prefab names that can never be moved. |
 | AuraMove: Shimmer Seconds | 0.6 | 0 to 3 | Total duration of the shrink and grow animation. 0 snaps and only plays the burst effects. |
 | AuraMove: Effect Prefabs | vfx_Place_wood_pole,... | | Comma-separated fallback effect prefabs used when the moved piece has no place effect of its own. |
-| AuraMove: Move Key | V + LeftAlt | | Keyboard shortcut to grab and confirm a move. Not synced - set per client. |
+| AuraMove: Move Key | M + LeftAlt | | Keyboard shortcut to grab and confirm a move. Not synced - set per client. |
 | AuraMove: Gamepad Modifier | JoyAltKeys | | ZInput button held with the gamepad button. Leave empty for no modifier. Not synced - set per client. |
 | AuraMove: Gamepad Button | JoyButtonY | | ZInput button that grabs and confirms a move. Not synced - set per client. |
 
 ## Other mods
 
-- OttoPay is required, and OttoAura does not load without it. Paid repairs and AuraBoost both work through AuraPay.
+- OttoPay 1.5.0 is required, and OttoAura does not load without it. Paid repairs and AuraBoost both work through AuraPay.
 - AuraBoost does not stack with run stamina discounts that other mods add through their own status effects. When one is active, the bigger discount wins. Food, meads, Moder's power and item mods built on the game's own status effect types still stack with AuraBoost as usual.- Blacksmithing changes what happens after a repair. When an item reaches full durability, it stops losing durability for a while, and that time is 10 minutes times the player's Blacksmithing skill factor once the factor reaches 0.5. The item data keys are the same ones RepairStation used, so gear repaired by RepairStation keeps its time.
 
 ## Credits

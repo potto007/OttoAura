@@ -5,6 +5,6 @@
   "description": "Your ward heals you and repairs your worn gear while you stand inside it. The Merchant Guild also moves placed objects a short distance for a small fee. Free, or paid from your OttoPay balance. Based on RepairStation by Azumatt.",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2350",
-    "potto007-OttoPay-1.4.0"
+    "potto007-OttoPay-1.5.0"
   ]
 }

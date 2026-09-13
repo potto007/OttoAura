@@ -26,6 +26,10 @@ internal static class AuraMoveController
 
     internal static void Tick()
     {
+        // Effect cleanup runs before the local-player guard: instances spawned by the last move
+        // still have to be reaped while the player is being torn down.
+        MoveEffects.Tick();
+
         Player? player = Player.m_localPlayer;
         if (player == null)
         {

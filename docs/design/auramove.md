@@ -41,7 +41,8 @@ tint are all vanilla behaviour rather than a private ghost.
    the fee is charged first, and on success the RPC goes out. A destination the game refuses gets
    vanilla's own message; a destination that is only too far gets the Guild's.
 6. **Shimmer.** On every client that has the object loaded, the object shrinks away at the old
-   spot with a burst of VFX/SFX, is relocated, and grows back at the new spot with a second burst.
+   spot as that spot flares, a wisp carries it across, and it grows back at the new spot over a
+   spirit summon and a chime.
 7. **Cancel.** Right click, which the Guild reads as "let go" instead of the hammer's remove, so a
    cancel can never smash what the player is pointing at. The carry is also dropped by choosing a
    different piece or category, putting the hammer away, dying, teleporting, logging out, walking
@@ -101,8 +102,12 @@ key binding belongs to the client, the same split OttoRedecorate uses.
 | Support Is Immovable | `AuraMoveSupportImmovable` | Toggle | On | | yes | Nothing that carries load can move, except furniture. |
 | Allowed Prefabs | `AuraMoveAllowedPrefabs` | string | `wood_fine_stack,blackwood_stack,bone_stack,piece_beehive` | | yes | Comma separated prefab names that skip every later rule. |
 | Denied Prefabs | `AuraMoveDeniedPrefabs` | string | `fire_pit,bonfire,hearth,windmill` | | yes | Comma separated prefab names that can never move. |
-| Shimmer Seconds | `AuraMoveShimmerSeconds` | float | 0.6 | 0-3 | yes | Length of the fade out and fade in together. 0 snaps and only plays the effects. |
-| Effect Prefabs | `AuraMoveEffectPrefabs` | string | `vfx_Place_wood_pole,sfx_build_cultivator` | | yes | Fallback effect prefabs, used only when the moved piece has no place effect of its own. |
+| Shimmer Seconds | `AuraMoveShimmerSeconds` | float | 1.2 | 0-3 | yes | Length of the shrink and the grow together. 0 snaps and only plays the stage effects. |
+| Grab Effects | `AuraMoveGrabEffects` | string | `fx_summon_start,sfx_staffspiritcaller_cast` | | yes | Played for the grabbing client alone, at the source object's feet. |
+| Depart Effects | `AuraMoveDepartEffects` | string | `vfx_Potion_eitr_minor,sfx_OpenPortal` | | yes | Played on every client at the old spot as the object starts to shrink. |
+| Travel Effect | `AuraMoveTravelEffect` | string | `vfx_pick_wisp` | | yes | One prefab, flown along an arc from the old spot to the new one. Blank flies nothing. |
+| Arrive Effects | `AuraMoveArriveEffects` | string | `fx_summon_spirit_spawn,sfx_runestone_activate` | | yes | Played on every client at the new spot as the object grows back in. |
+| Finish Effects | `AuraMoveFinishEffects` | string | `sfx_dverger_heal_finish` | | yes | Played on every client at the new spot once the object is whole again. |
 | Move Key | `AuraMoveKey` | KeyboardShortcut | `M + LeftAlt` | | no | Takes the hammer out with Guild Move selected, and puts it away again. |
 
 `Gamepad Modifier` and `Gamepad Button` were dropped in the hammer rework. The grab and the
@@ -187,28 +192,73 @@ piece table and no other selection can see it. `MovePlacement.cs`, the hand-roll
 
 ## Effect design
 
-Two layers, both driven from inside the RPC handler so every client that has the object loaded runs
-them, not only the player who paid.
+The move should read as a conjuring rather than a teleport, and it is built entirely from effect
+prefabs the game already ships, so the mod carries no assets. Five stages, each one a
+comma-separated config entry of prefab names, so the whole choreography is overridable without a
+rebuild. Only the first is local; the other four run from inside the RPC handler, so every client
+that has the object loaded sees the same thing, not only the player who paid.
 
-1. **Burst.** The moved piece's own `Piece.m_placeEffect.Create(position, rotation)` at the old spot
-   and again at the new spot. That is the sound and the sparkle the game already ships for placing
-   that exact piece, so nothing has to be guessed and nothing can be missing. Only if the piece has
-   no enabled entry in `m_placeEffect` does the code fall back to **Effect Prefabs**, resolved
-   through `ZNetScene.instance.m_namedPrefabs` by stable hash so a missing name warns once instead
-   of spamming `GetPrefab`'s error. The two fallback defaults, `vfx_Place_wood_pole` and
-   `sfx_build_cultivator`, are names already used against this game version by
-   Advize_PlantEverything. Effect prefabs must be instantiated locally only; a prefab carrying a
-   `ZNetView` would be spawned once per client, so any such prefab is skipped with a warning.
-2. **Shimmer.** A uniform `transform.localScale` tween: the object shrinks to near zero over the
-   first half of **Shimmer Seconds**, the relocation is applied at the midpoint, and it grows back
-   over the second half. Scale was chosen over an alpha fade deliberately. Valheim's piece shaders
-   are opaque and there is no reliable `_Color` alpha to drive; a scale tween needs no shader
-   assumptions, reverts exactly, and reads as a dematerialise. Because it runs inside the RPC
-   handler it is network-visible: remote clients see the shimmer too, not a snap. `localScale` is
-   never serialised, so nothing about it can leak into the save.
+| Stage | When | Scope | Default |
+| --- | --- | --- | --- |
+| Grab | the player takes hold | local | `fx_summon_start`, `sfx_staffspiritcaller_cast` |
+| Depart | the object starts to shrink, at the old spot | every client | `vfx_Potion_eitr_minor`, `sfx_OpenPortal` |
+| Travel | across the shrink, arriving as the object reappears | every client | `vfx_pick_wisp` |
+| Arrive | the relocation is applied, at the new spot | every client | `fx_summon_spirit_spawn`, `sfx_runestone_activate` |
+| Finish | the object is whole again, at the new spot | every client | `sfx_dverger_heal_finish` |
 
-Shimmer Seconds 0 skips the tween and applies the move immediately, still with both bursts. A
-tween whose object is destroyed mid-flight aborts on the next frame, and `MoveEffects.StopAll`
+Why each default: `fx_summon_start` is the summoning circle that opens a spirit summon, which is
+exactly the "the Guild is taking hold of this" beat, and `sfx_staffspiritcaller_cast` is its soft
+cast. `vfx_Potion_eitr_minor` is the eitr-coloured flash the game uses for magic being spent, over
+`sfx_OpenPortal` for the sense of somewhere being opened. `vfx_pick_wisp` is a single small mote,
+which is what a thing in transit should look like. `fx_summon_spirit_spawn` is the far end of the
+same summon the grab opened, and `sfx_runestone_activate` gives the arrival its weight.
+`sfx_dverger_heal_finish` is a short chime that says the work is done without another bang.
+
+**Shimmer.** A uniform `transform.localScale` tween: the object shrinks to near zero over the
+first half of **Shimmer Seconds**, the relocation is applied at the midpoint, and it grows back
+over the second half. Scale was chosen over an alpha fade deliberately. Valheim's piece shaders are
+opaque and there is no reliable `_Color` alpha to drive; a scale tween needs no shader assumptions,
+reverts exactly, and reads as a dematerialise. `localScale` is never serialised, so nothing about it
+can leak into the save. The default is 1.2 s, which is long enough for the departure, the crossing
+and the arrival to read as three separate beats. Shimmer Seconds 0 skips the tween and the travel
+wisp, and fires Depart, Arrive and Finish on the same frame.
+
+**The piece's own place effect** still plays, as one more arrival effect at the new spot only. It is
+the exact sound and sparkle the game ships for placing that piece, so where a piece has one it
+grounds the arrival in the object's own material. It is no longer used at the old spot, and it is no
+longer a fallback: the config stages are the choreography, and the place effect rides along with
+them.
+
+**Travel path.** The wisp is instantiated at the old spot and its transform is written each frame
+along `Vector3.Lerp(from, to, t)` plus a sine hump, so it leaves and lands on the ground and rides
+over what is between. The arc height is a quarter of the distance covered, capped at 3 m. The lerp
+allocates nothing per frame: it writes `transform.position` from stack values only.
+
+**Prefab resolution.** Names are looked up in `ZNetScene.instance.m_namedPrefabs` by stable hash
+rather than through `GetPrefab`, so a name that is not in this game version warns once instead of
+spamming `GetPrefab`'s error log on every move.
+
+**Networked prefabs.** Several of the magic-flavoured vanilla effects, the summon and guardstone
+families in particular, carry a `ZNetView`, and instantiating one as-is would create a networked
+object once per client. Rather than skip them, which would rule out most of the interesting
+effects, every effect is instantiated with `ZNetView.m_forceDisableInit` set: `ZNetView.Awake` then
+destroys itself instead of claiming a ZDO, so the instance is purely local, silent on the wire, and
+identical to look at. The flag is saved and restored around the `Instantiate` call.
+
+**Lifetime.** `MoveEffects` owns the lifetime of everything it spawns and does not trust the
+prefab's own `TimedDestruction`: that component caches its `ZNetView` in `Awake`, and with the
+`ZNetView` destroyed under it the timer can end up doing nothing. Every instance is tracked and
+destroyed after at most 5 s by `MoveEffects.Tick`, which `AuraMoveController.Tick` calls before its
+own local-player guard so cleanup keeps running while the player is torn down. The travel wisp is
+destroyed on arrival. The grab ring is destroyed by `MoveCarry.Drop`, so a cancel or a confirm takes
+it with the carry. `StopAll` destroys every tracked instance and restores every tweened scale, and
+runs on `Game.Logout` and on plugin shutdown.
+
+**Nothing is parented to the moved object.** An attached effect would be dragged through the
+relocation and would inherit the shimmer's near-zero scale, so every instance is a free-standing
+world object at a fixed position. That also keeps effects clear of the ZDO position write.
+
+A tween whose object is destroyed mid-flight aborts on the next frame, and `MoveEffects.StopAll`
 restores every tracked original scale on shutdown.
 
 ## Multiplayer semantics
@@ -233,7 +283,7 @@ AuraMove/MoveTargeting.cs       the AuraMove key, input gates, crosshair prompt 
 AuraMove/GuildMove.cs           pseudo-piece, Merchant Guild category, piece table and tab patches
 AuraMove/MoveCarry.cs           carry state and the vanilla placement patches
 AuraMove/MoveRelocation.cs      RPC register/send/handle, ZDO write, UpdateOrientation
-AuraMove/MoveEffects.cs         bursts and the shimmer coroutine
+AuraMove/MoveEffects.cs         the five effect stages, their lifetimes, and the shimmer coroutine
 AuraMove/AuraMoveController.cs  state machine, fee, player messages, Init/Tick/Shutdown
 Plugin.cs                       config entries, using, Init/Tick/Shutdown wiring (integration only)
 ```
@@ -254,7 +304,11 @@ internal static ConfigEntry<Toggle> AuraMoveSupportImmovable = null!;
 internal static ConfigEntry<string> AuraMoveAllowedPrefabs = null!;
 internal static ConfigEntry<string> AuraMoveDeniedPrefabs = null!;
 internal static ConfigEntry<float> AuraMoveShimmerSeconds = null!;
-internal static ConfigEntry<string> AuraMoveEffectPrefabs = null!;
+internal static ConfigEntry<string> AuraMoveGrabEffects = null!;
+internal static ConfigEntry<string> AuraMoveDepartEffects = null!;
+internal static ConfigEntry<string> AuraMoveTravelEffect = null!;
+internal static ConfigEntry<string> AuraMoveArriveEffects = null!;
+internal static ConfigEntry<string> AuraMoveFinishEffects = null!;
 internal static ConfigEntry<KeyboardShortcut> AuraMoveKey = null!;
 
 internal enum MoveDenial
@@ -315,6 +369,9 @@ internal static class MoveRelocation
 
 internal static class MoveEffects
 {
+    internal static void Tick();
+    internal static void PlayGrab(Piece source);
+    internal static void StopGrab();
     internal static void PlayRelocation(GameObject movedObject, Vector3 fromPosition,
         Quaternion fromRotation, Vector3 toPosition, Quaternion toRotation, System.Action apply);
     internal static void StopAll();

@@ -27,6 +27,16 @@ The magic of AuraPay makes you feel invigorated and lighter on your feet! As a r
 
 Only things players make count. Terrain counts when it is clearly hoed into a path or paved. Built pieces count by material: stone, marble, ashstone and ancient pieces are roads, and wood, hardwood, timberwood and iron are trails.
 
+## AuraMove
+
+While AuraPay is on, the Merchant Guild offers one more service: for a small coin fee it picks a placed object up and sets it down a short distance away, contents and state intact, so you do not have to smash it and build a new one. Look at a chest, a lantern, a piece of furniture or a beehive with empty hands. If the Guild is willing to move it, the hover text says so and names the key.
+
+Press that key to grab the object. A placement ghost appears where you are looking while the real object stays put, and you aim it the way you aim a build piece: the mouse wheel or the gamepad rotate buttons turn it, and the ghost goes red wherever the Guild will not set it down, including anywhere past Max Move Distance from where the object stands now. Press the key again to confirm. The fee comes out of your OttoPay Merchant Bank balance whole or nothing, the same way repairs do, so a balance that runs short moves nothing and charges nothing. Escape, or the gamepad B button, lets go at no cost, and so does dying, teleporting or taking out a build tool.
+
+The object fades out where it stood and fades back in at the new spot. Other players on the server see the move too, because the new position goes through the object's ZDO. Chest contents and bed spawn points follow it.
+
+Some things cannot be moved. The Guild will not touch vehicles, live wards, armed traps or active shield generators. Workbenches and stonecutters are load-bearing build infrastructure and stay where they are. Plants are rooted. Any chest that another player has open is off limits. By default, non-furniture pieces that carry structural load are immovable too, so the building itself cannot shift; you can turn that rule off with the Support Is Immovable setting. The Allowed Prefabs and Denied Prefabs lists let you grant or block particular objects by prefab name regardless of the other rules.
+
 ## Client and server
 
 OttoAura is a client mod, so it works on a server that does not have it.
@@ -35,7 +45,7 @@ If you also install it on the server, the server config wins and the clients fol
 
 ## Configuration
 
-The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every setting below is synced from the server except Show Heal Text.
+The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every setting below is synced from the server except Show Heal Text and the three AuraMove input settings.
 
 | Setting | Default | Range | Meaning |
 | --- | --- | --- | --- |
@@ -50,6 +60,17 @@ The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every s
 | AuraBoost: Stamina Usage Trail | 0.5 | 0 to 1 | Run stamina drain on dirt paths, wood and metal. 0 is none and 1 is vanilla. |
 | AuraBoost: Stamina Usage Road | 0 | 0 to 1 | Run stamina drain on paved roads and stone. 0 is none and 1 is vanilla. |
 | AuraBoost: Show Status Icon | On | | Show the AuraBoost icon in the status bar while the effect is active. |
+| AuraMove: Enabled | On | | Turn the Guild move service off entirely. |
+| AuraMove: Coins | 5 | 0 to 1000 | Coins charged to the Merchant Bank balance per completed move. 0 makes moving free, but AuraPay must still be on. |
+| AuraMove: Max Move Distance | 10 | 1 to 64 | How far in metres the destination may sit from where the object stands now. |
+| AuraMove: Support Is Immovable | On | | Non-furniture pieces that carry structural load cannot be moved. |
+| AuraMove: Allowed Prefabs | wood_fine_stack,... | | Comma-separated prefab names that skip every eligibility restriction and can always be moved. |
+| AuraMove: Denied Prefabs | fire_pit,... | | Comma-separated prefab names that can never be moved. |
+| AuraMove: Shimmer Seconds | 0.6 | 0 to 3 | Total duration of the shrink and grow animation. 0 snaps and only plays the burst effects. |
+| AuraMove: Effect Prefabs | vfx_Place_wood_pole,... | | Comma-separated fallback effect prefabs used when the moved piece has no place effect of its own. |
+| AuraMove: Move Key | V + LeftAlt | | Keyboard shortcut to grab and confirm a move. Not synced - set per client. |
+| AuraMove: Gamepad Modifier | JoyAltKeys | | ZInput button held with the gamepad button. Leave empty for no modifier. Not synced - set per client. |
+| AuraMove: Gamepad Button | JoyButtonY | | ZInput button that grabs and confirms a move. Not synced - set per client. |
 
 ## Other mods
 

@@ -10,6 +10,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using JetBrains.Annotations;
 using OttoAura.AuraBoost;
+using OttoAura.AuraMove;
 using ServerSync;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace OttoAura
     public class OttoAuraPlugin : BaseUnityPlugin
     {
         internal const string ModName = "OttoAura";
-        internal const string ModVersion = "1.1.0";
+        internal const string ModVersion = "1.2.0";
         internal const string Author = "potto007";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
@@ -62,6 +63,18 @@ namespace OttoAura
             AuraBoostShowStatusIcon = config("4 - AuraBoost", "Show Status Icon", Toggle.On, "If on, the AuraBoost icon shows in the status bar while the effect is active.");
             AuraBoostSprite = LoadSprite("auraboost_icon.png");
 
+            AuraMoveEnabled = config("5 - AuraMove", "Enabled", Toggle.On, "If on, the Merchant Guild will move placed objects for a fee while AuraPay is active.");
+            AuraMoveCoins = config("5 - AuraMove", "Coins", 5, new ConfigDescription("Coins charged to the Merchant Bank balance per completed move. 0 makes moving free, but AuraPay must still be on.", new AcceptableValueRange<int>(0, 1000)));
+            AuraMoveMaxDistance = config("5 - AuraMove", "Max Move Distance", 10f, new ConfigDescription("How far in metres the destination may sit from where the object stands now.", new AcceptableValueRange<float>(1f, 64f)));
+            AuraMoveSupportImmovable = config("5 - AuraMove", "Support Is Immovable", Toggle.On, "If on, non-furniture pieces that carry structural load cannot be moved.");
+            AuraMoveAllowedPrefabs = config("5 - AuraMove", "Allowed Prefabs", "wood_fine_stack,blackwood_stack,bone_stack,piece_beehive", "Comma-separated prefab names that skip every eligibility restriction and can always be moved.");
+            AuraMoveDeniedPrefabs = config("5 - AuraMove", "Denied Prefabs", "fire_pit,bonfire,hearth,windmill", "Comma-separated prefab names that can never be moved.");
+            AuraMoveShimmerSeconds = config("5 - AuraMove", "Shimmer Seconds", 0.6f, new ConfigDescription("Total duration of the shrink and grow animation. 0 snaps and only plays the burst effects.", new AcceptableValueRange<float>(0f, 3f)));
+            AuraMoveEffectPrefabs = config("5 - AuraMove", "Effect Prefabs", "vfx_Place_wood_pole,sfx_build_cultivator", "Comma-separated fallback effect prefabs used when the moved piece has no place effect of its own.");
+            AuraMoveKey = config("5 - AuraMove", "Move Key", new KeyboardShortcut(KeyCode.V, KeyCode.LeftAlt), "Keyboard shortcut to grab and confirm a move.", false);
+            AuraMoveGamepadModifier = config("5 - AuraMove", "Gamepad Modifier", "JoyAltKeys", "ZInput button that must be held with the gamepad button. Leave empty for no modifier.", false);
+            AuraMoveGamepadButton = config("5 - AuraMove", "Gamepad Button", "JoyButtonY", "ZInput button that grabs and confirms a move.", false);
+
             if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing) && Blacksmithing != null)
             {
                 BlacksmithingInstalled = true;
@@ -75,12 +88,14 @@ namespace OttoAura
         public void Start()
         {
             AuraBoostEffect.Init();
+            AuraMoveController.Init();
         }
 
         private void Update()
         {
             WardAura.Update(Time.deltaTime);
             AuraBoostEffect.Tick();
+            AuraMoveController.Tick();
         }
 
         // UnityEngine.ImageConversionModule cannot be referenced from net48: its metadata
@@ -135,6 +150,7 @@ namespace OttoAura
 
         private void OnDestroy()
         {
+            AuraMoveController.Shutdown();
             AuraBoostEffect.Shutdown();
             Config.Save();
         }
@@ -180,6 +196,17 @@ namespace OttoAura
         internal static ConfigEntry<float> AuraBoostStaminaRoad = null!;
         internal static ConfigEntry<Toggle> AuraBoostShowStatusIcon = null!;
         internal static Sprite? AuraBoostSprite;
+        internal static ConfigEntry<Toggle> AuraMoveEnabled = null!;
+        internal static ConfigEntry<int> AuraMoveCoins = null!;
+        internal static ConfigEntry<float> AuraMoveMaxDistance = null!;
+        internal static ConfigEntry<Toggle> AuraMoveSupportImmovable = null!;
+        internal static ConfigEntry<string> AuraMoveAllowedPrefabs = null!;
+        internal static ConfigEntry<string> AuraMoveDeniedPrefabs = null!;
+        internal static ConfigEntry<float> AuraMoveShimmerSeconds = null!;
+        internal static ConfigEntry<string> AuraMoveEffectPrefabs = null!;
+        internal static ConfigEntry<KeyboardShortcut> AuraMoveKey = null!;
+        internal static ConfigEntry<string> AuraMoveGamepadModifier = null!;
+        internal static ConfigEntry<string> AuraMoveGamepadButton = null!;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {

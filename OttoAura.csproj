@@ -29,6 +29,8 @@
     <Reference Include="UnityEngine.IMGUIModule" HintPath="$(CorlibPath)/UnityEngine.IMGUIModule.dll" Private="false" />
     <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(CorlibPath)/UnityEngine.InputLegacyModule.dll" Private="false" />
     <Reference Include="UnityEngine.PhysicsModule" HintPath="$(CorlibPath)/UnityEngine.PhysicsModule.dll" Private="false" />
+    <Reference Include="UnityEngine.AudioModule" HintPath="$(CorlibPath)/UnityEngine.AudioModule.dll" Private="false" />
+    <Reference Include="UnityEngine.ParticleSystemModule" HintPath="$(CorlibPath)/UnityEngine.ParticleSystemModule.dll" Private="false" />
     <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(CorlibPath)/UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="UnityEngine.UI" HintPath="$(CorlibPath)/UnityEngine.UI.dll" Private="false" />
     <Reference Include="Unity.TextMeshPro" HintPath="$(CorlibPath)/Unity.TextMeshPro.dll" Private="false" />

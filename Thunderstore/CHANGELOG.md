@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0
+
+- AuraMove. While AuraPay is on, the Merchant Guild picks a placed object up and sets it down a short distance away for a small coin fee, contents and state intact, so you do not have to smash it and rebuild.
+- The fee is whole-or-nothing from your Merchant Bank balance. If the balance runs short, nothing moves and nothing is charged.
+- Default binding is `V + LeftAlt` on keyboard, `JoyAltKeys + JoyButtonY` on gamepad. Both are configurable per client.
+- New server-synced settings under `5 - AuraMove`: `Enabled`, `Coins`, `Max Move Distance`, `Support Is Immovable`, `Allowed Prefabs`, `Denied Prefabs`, `Shimmer Seconds`, and `Effect Prefabs`. The three input settings (`Move Key`, `Gamepad Modifier`, `Gamepad Button`) are per-client only.
+- Other players see the move because the new position goes through the object's ZDO. Chest contents and bed spawn points follow it.
+
 ## 1.1.0
 
 - AuraBoost. The magic of AuraPay makes you feel invigorated and lighter on your feet! Merchant Bank members with AuraPay on in OttoPay drain less stamina while running on roads and trails.

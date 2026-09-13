@@ -4,7 +4,7 @@ namespace OttoAura.AuraMove;
 
 // MoveEligibility answers whether a placed piece may be moved by AuraMove and, if not, why.
 // The rules are a direct port of OttoRedecorate.Redecorate.CanMove, minus the hammer/Feaster
-// tool checks, which do not apply because AuraMove works with empty hands.
+// tool checks, which AuraMove replaces with its own Guild Move piece.
 // Checks run in order; the first match wins.
 internal enum MoveDenial
 {
@@ -19,10 +19,10 @@ internal static class MoveEligibility
 
     internal static MoveDenial Evaluate(Piece? piece, bool flashWard = false)
     {
-        // 1. Player must be alive and not in build mode (hammer/hoe/cultivator out).
-        //    InPlaceMode keeps AuraMove out of the way of the vanilla build ghost and OttoRedecorate.
+        // 1. Player must be alive. Build mode is no longer a bar: AuraMove is a hammer piece now,
+        //    so every eligibility check runs with the hammer out.
         Player? localPlayer = Player.m_localPlayer;
-        if (localPlayer == null || localPlayer.IsDead() || localPlayer.InPlaceMode())
+        if (localPlayer == null || localPlayer.IsDead())
         {
             return MoveDenial.NoPlayer;
         }

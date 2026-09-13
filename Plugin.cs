@@ -71,9 +71,7 @@ namespace OttoAura
             AuraMoveDeniedPrefabs = config("5 - AuraMove", "Denied Prefabs", "fire_pit,bonfire,hearth,windmill", "Comma-separated prefab names that can never be moved.");
             AuraMoveShimmerSeconds = config("5 - AuraMove", "Shimmer Seconds", 0.6f, new ConfigDescription("Total duration of the shrink and grow animation. 0 snaps and only plays the burst effects.", new AcceptableValueRange<float>(0f, 3f)));
             AuraMoveEffectPrefabs = config("5 - AuraMove", "Effect Prefabs", "vfx_Place_wood_pole,sfx_build_cultivator", "Comma-separated fallback effect prefabs used when the moved piece has no place effect of its own.");
-            AuraMoveKey = config("5 - AuraMove", "Move Key", new KeyboardShortcut(KeyCode.M, KeyCode.LeftAlt), "Keyboard shortcut to grab and confirm a move.", false);
-            AuraMoveGamepadModifier = config("5 - AuraMove", "Gamepad Modifier", "JoyAltKeys", "ZInput button that must be held with the gamepad button. Leave empty for no modifier.", false);
-            AuraMoveGamepadButton = config("5 - AuraMove", "Gamepad Button", "JoyButtonY", "ZInput button that grabs and confirms a move.", false);
+            AuraMoveKey = config("5 - AuraMove", "Move Key", new KeyboardShortcut(KeyCode.M, KeyCode.LeftAlt), "Keyboard shortcut that takes the hammer out and selects Guild Move, and puts it away again.", false);
 
             if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing) && Blacksmithing != null)
             {
@@ -98,7 +96,7 @@ namespace OttoAura
                 }
                 int coins = AuraMoveCoins.Value;
                 string cost = coins > 0 ? $"for {coins} coins" : "for free";
-                return $"AuraMove: look at a chest or piece of furniture and press {AuraMove.MoveTargeting.KeyLabel} to have the Merchant Guild move it a short way {cost}.";
+                return $"AuraMove: open the hammer's Merchant Guild tab or press {AuraMove.MoveTargeting.KeyLabel}, then click a chest or piece of furniture to have the Merchant Guild move it a short way {cost}.";
             });
         }
 
@@ -224,8 +222,6 @@ namespace OttoAura
         internal static ConfigEntry<float> AuraMoveShimmerSeconds = null!;
         internal static ConfigEntry<string> AuraMoveEffectPrefabs = null!;
         internal static ConfigEntry<KeyboardShortcut> AuraMoveKey = null!;
-        internal static ConfigEntry<string> AuraMoveGamepadModifier = null!;
-        internal static ConfigEntry<string> AuraMoveGamepadButton = null!;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {

@@ -3,137 +3,129 @@ using UnityEngine;
 
 namespace OttoAura.AuraMove;
 
-// AuraMoveController: the state machine that reads input, drives the placement ghost, charges the
-// fee and sends the relocation RPC. IsAvailable is re-read every frame because the server can
-// switch the setting and the player can switch AuraPay at any moment - the same pattern as
-// AuraBoostEffect.IsActive.
+// AuraMoveController: the state machine behind the hammer's Merchant Guild tab. It keeps the
+// pseudo-piece's availability in step with the config and with AuraPay, answers the left click
+// that takes hold of an object or sets it down, charges the fee and sends the relocation RPC.
+//
+// IsAvailable is re-read every frame because the server can switch the setting and the player can
+// switch AuraPay at any moment - the same pattern as AuraBoostEffect.IsActive.
 internal static class AuraMoveController
 {
-    private static Piece? _selected;
-    private static bool _isMoving;
-
-    // Frame on which an Escape press was spent cancelling a move. See Menu_Show_Patch.
-    private static int _menuSuppressFrame = -1;
+    private static bool _lastAvailable;
 
     // The server can switch AuraMove off, and the player can switch AuraPay off, at any moment.
     internal static bool IsAvailable =>
         OttoAuraPlugin.AuraMoveEnabled.Value == OttoAuraPlugin.Toggle.On && OttoPayBridge.IsAuraPayEnabled();
 
-    internal static bool IsMoving => _isMoving;
-    internal static Piece? Selected => _selected;
-
     // Called from Plugin.Start. No world, ZNet or ZNetScene exists yet; only clear local state.
     internal static void Init()
     {
-        _selected = null;
-        _isMoving = false;
+        MoveCarry.Drop(rebuildGhost: false);
+        _lastAvailable = false;
     }
 
     internal static void Tick()
     {
         Player? player = Player.m_localPlayer;
-
-        if (player == null || !IsAvailable)
+        if (player == null)
         {
-            if (_isMoving)
-            {
-                // Server or player switched off while a move was in flight; cancel silently.
-                EndMove();
-            }
-            MoveTargeting.ClearHover();
+            MoveCarry.Drop(rebuildGhost: false);
+            _lastAvailable = false;
             return;
         }
 
-        if (_isMoving)
+        bool available = IsAvailable;
+
+        // The carry goes first: dropping it before the piece list is rebuilt keeps vanilla from
+        // building one more ghost of an object the Guild has already let go of.
+        if (MoveCarry.IsCarrying && !CarryStillValid(player, available))
         {
-            TickMoving(player);
+            // Any interrupt ends the move silently. Nothing was charged.
+            MoveCarry.Drop(rebuildGhost: true);
         }
-        else
+
+        if (available != _lastAvailable)
         {
-            TickIdle(player);
+            _lastAvailable = available;
+            // Rebuild the hammer's piece list so the Merchant Guild tab appears or disappears the
+            // moment the setting or AuraPay changes, rather than at the next equipment change.
+            if (player.InPlaceMode())
+            {
+                player.UpdateAvailablePiecesList();
+            }
         }
+
+        GuildMove.RefreshDescription();
+
+        if (player.InPlaceMode() && player.m_buildPieces == GuildMove.HammerTable)
+        {
+            GuildMove.EnsureTabs(player.m_buildPieces);
+        }
+
+        HandleShortcut(player, available);
     }
 
     internal static void Shutdown()
     {
-        _isMoving = false;
-        _selected = null;
-        MovePlacement.Cancel();
+        MoveCarry.Drop(rebuildGhost: false);
         MoveEffects.StopAll();
+        GuildMove.Shutdown();
+        _lastAvailable = false;
     }
 
-    private static void TickMoving(Player player)
+    // Left click with Guild Move selected. Returns true to hand the click back to vanilla, which
+    // is only ever done so vanilla can report why a destination was refused.
+    internal static bool HandlePlaceClick(Player player)
     {
-        // Abort silently on any interrupt condition.
-        if (player.IsDead()
-            || player.IsTeleporting()
-            || player.InPlaceMode()
-            || _selected == null
-            || _selected.m_nview == null
-            || !_selected.m_nview.IsValid()
-            || Vector3.Distance(player.transform.position, _selected.transform.position)
-               > OttoAuraPlugin.AuraMoveMaxDistance.Value + player.m_maxPlaceDistance)
+        if (!IsAvailable)
         {
-            EndMove();
-            return;
+            MoveCarry.Drop(rebuildGhost: true);
+            return false;
         }
 
-        // Explicit cancel by the player.
-        if (MoveTargeting.CancelPressed())
+        if (!MoveCarry.IsCarrying)
         {
-            CancelByPlayer(player);
-            return;
+            TryGrab(player);
+            return false;
         }
 
-        // A menu, the console or the large map has the camera and the pointer; freeze the ghost
-        // where it is instead of letting it chase a camera the player is not aiming with.
-        if (MoveTargeting.InputBlocked)
+        // Vanilla decides first: rotation, snapping, wards, biome and clipping all come from
+        // UpdatePlacementGhost, and the distance rule is applied on top of it.
+        player.UpdatePlacementGhost(flashGuardStone: true);
+
+        if (MoveCarry.TooFar)
         {
-            return;
+            player.Message(MessageHud.MessageType.TopLeft, "The Guild will not carry it that far.");
+            return false;
         }
 
-        MovePlacement.UpdateGhost(_selected);
-
-        if (!MoveTargeting.ActivatePressed())
+        if (player.m_placementStatus != Player.PlacementStatus.Valid)
         {
-            return;
-        }
-
-        if (!MovePlacement.IsValid)
-        {
-            // Tell the player and stay in the move so they can aim again.
-            player.Message(MessageHud.MessageType.TopLeft, "The Guild will not set it down there.");
-            return;
+            // Vanilla's own message names the actual reason.
+            return true;
         }
 
         ChargeAndCommit(player);
+        return false;
     }
 
-    private static void TickIdle(Player player)
+    // Cancel on the player's own right click.
+    internal static void CancelByPlayer(Player player)
     {
-        // Nothing to point at while a menu is up or a build tool is out, and the crosshair prompt
-        // must not linger there either.
-        if (MoveTargeting.InputBlocked)
-        {
-            MoveTargeting.ClearHover();
-            return;
-        }
+        player.Message(MessageHud.MessageType.TopLeft, "The Merchant Guild lets go.");
+        MoveCarry.Drop(rebuildGhost: true);
+    }
 
-        MoveTargeting.UpdateHover();
-
-        if (!MoveTargeting.ActivatePressed())
-        {
-            return;
-        }
-
-        // Pressing the key at open air is not a request for anything, so say nothing.
-        Piece? hovered = MoveTargeting.Hovered;
+    private static void TryGrab(Player player)
+    {
+        Piece? hovered = player.GetHoveringPiece();
         if (hovered == null)
         {
+            // Clicking at open air is not a request for anything, so say nothing.
             return;
         }
 
-        // flashWard: true so a warded refusal flashes the ward on a deliberate key press.
+        // flashWard: true so a warded refusal flashes the ward on a deliberate click.
         MoveDenial denial = MoveEligibility.Evaluate(hovered, flashWard: true);
         if (denial != MoveDenial.None)
         {
@@ -145,34 +137,31 @@ internal static class AuraMoveController
             return;
         }
 
-        if (!MovePlacement.Begin(hovered))
+        if (!MoveCarry.Grab(player, hovered))
         {
             return;
         }
 
-        _selected = hovered;
-        _isMoving = true;
-        string name = Localization.instance.Localize(hovered.m_name);
-        player.Message(MessageHud.MessageType.TopLeft, $"The Merchant Guild takes hold of the {name}.");
-
-        // Return immediately so this same key press cannot also confirm placement in this frame.
+        player.Message(MessageHud.MessageType.TopLeft, $"The Merchant Guild takes hold of the {MoveCarry.CarriedName}.");
     }
 
     private static void ChargeAndCommit(Player player)
     {
+        Piece? source = MoveCarry.Source;
+        GameObject? ghost = player.m_placementGhost;
+
         // Never take coins for a move that cannot be sent: check the piece and the network layer
         // first, because TryWithdraw has no refund.
-        Piece? selected = _selected;
-        if (selected == null || !MoveRelocation.CanRequest(selected))
+        if (source == null || ghost == null || !MoveRelocation.CanRequest(source))
         {
-            EndMove();
+            MoveCarry.Drop(rebuildGhost: true);
             return;
         }
 
         // Eligibility was judged when the player took hold, and aiming takes time: another player
         // can open the chest, a ward can be switched on, a trap can be armed. Judge it again on
         // the frame the coins would move.
-        MoveDenial denial = MoveEligibility.Evaluate(selected, flashWard: true);
+        MoveDenial denial = MoveEligibility.Evaluate(source, flashWard: true);
         if (denial != MoveDenial.None)
         {
             string denialReason = MoveEligibility.DenialMessage(denial);
@@ -180,7 +169,7 @@ internal static class AuraMoveController
             {
                 player.Message(MessageHud.MessageType.TopLeft, denialReason);
             }
-            EndMove();
+            MoveCarry.Drop(rebuildGhost: true);
             return;
         }
 
@@ -188,20 +177,20 @@ internal static class AuraMoveController
         if (cost > 0 && !OttoPayBridge.TryWithdraw(cost))
         {
             // TryWithdraw is whole-or-nothing; nothing was taken.
-            // Answer this deliberate key press every time - do not throttle.
+            // Answer this deliberate click every time - do not throttle.
             player.Message(MessageHud.MessageType.TopLeft,
                 "Your Merchant Bank balance is empty. The Merchant Guild does not work for free.");
             return; // Stay in the move; the player can try again after topping up.
         }
 
-        Vector3 position = MovePlacement.Position;
-        Quaternion rotation = MovePlacement.Rotation;
-        string name = Localization.instance.Localize(selected.m_name);
+        Vector3 position = ghost.transform.position;
+        Quaternion rotation = ghost.transform.rotation;
+        string name = MoveCarry.CarriedName;
 
-        bool sent = MoveRelocation.Request(selected, position, rotation);
+        bool sent = MoveRelocation.Request(source, position, rotation);
 
         // End the move before showing any message.
-        EndMove();
+        MoveCarry.Drop(rebuildGhost: true);
 
         if (!sent)
         {
@@ -216,64 +205,87 @@ internal static class AuraMoveController
         player.Message(MessageHud.MessageType.TopLeft, moved);
     }
 
-    // Cancel on the player's own key press, and remember the frame so the pause menu can be kept
-    // out of it.
-    private static void CancelByPlayer(Player player)
+    // Everything that has to stay true for the whole of a carry. The explicit hooks in MoveCarry
+    // catch the ordinary exits; this catches the rest, including the source object being
+    // destroyed or unloaded under the player.
+    private static bool CarryStillValid(Player player, bool available)
     {
-        _menuSuppressFrame = Time.frameCount;
-        player.Message(MessageHud.MessageType.TopLeft, "The Merchant Guild lets go.");
-        EndMove();
-    }
-
-    // True once for the frame a cancel spent the Escape press. Menu_Show_Patch is the only caller.
-    internal static bool ConsumeMenuSuppression()
-    {
-        if (_menuSuppressFrame != Time.frameCount)
+        if (!available || player.IsDead() || player.IsTeleporting() || !player.InPlaceMode())
         {
             return false;
         }
 
-        _menuSuppressFrame = -1;
-        return true;
-    }
-
-    // Cancel from inside Menu.Show, for the frame ordering where Menu.Update reads the Escape
-    // press before AuraMoveController.Tick does. Returns true when it took the press.
-    internal static bool CancelForMenuKey()
-    {
-        Player? player = Player.m_localPlayer;
-        if (!_isMoving || player == null || !MoveTargeting.CancelPressed())
+        if (player.m_buildPieces != GuildMove.HammerTable || !GuildMove.IsSelectedBy(player))
         {
             return false;
         }
 
-        CancelByPlayer(player);
-        return true;
-    }
-
-    private static void EndMove()
-    {
-        _isMoving = false;
-        _selected = null;
-        MovePlacement.Cancel();
-    }
-}
-
-// Escape is the cancel key, but Menu.Update reads KeyCode.Escape straight off the device, so no
-// ZInput reset can hide the press from it and every cancel would also open the pause menu. This
-// prefix eats the menu for exactly that press, whichever Update read the key first, and never
-// touches Escape when no move is in flight.
-[HarmonyPatch(typeof(Menu), nameof(Menu.Show))]
-static class Menu_Show_Patch
-{
-    private static bool Prefix()
-    {
-        if (AuraMoveController.ConsumeMenuSuppression())
+        Piece? source = MoveCarry.Source;
+        if (source == null || source.m_nview == null || !source.m_nview.IsValid())
         {
             return false;
         }
 
-        return !AuraMoveController.CancelForMenuKey();
+        // Walking away from the object ends the move: the destination can never be further from
+        // the object than Max Move Distance, so there is nothing left to aim at.
+        return Vector3.Distance(player.transform.position, source.transform.position)
+               <= OttoAuraPlugin.AuraMoveMaxDistance.Value + player.m_maxPlaceDistance;
+    }
+
+    // The shortcut equips the hammer and selects Guild Move, and puts the hammer away again when
+    // Guild Move is already what is selected.
+    private static void HandleShortcut(Player player, bool available)
+    {
+        if (!MoveTargeting.ShortcutDown || !available)
+        {
+            return;
+        }
+
+        if (GuildMove.PseudoPiece == null || GuildMove.HammerTable == null)
+        {
+            return;
+        }
+
+        if (GuildMove.IsSelectedBy(player))
+        {
+            // Unequip rather than HideHandItems: hiding only stows the hammer, and the next
+            // interaction brings it straight back out. UnequipItem runs SetupEquipment, which
+            // leaves place mode the same way pressing the hotbar slot again does.
+            MoveCarry.Drop(rebuildGhost: false);
+            player.UnequipItem(player.GetRightItem());
+            return;
+        }
+
+        if (player.m_buildPieces != GuildMove.HammerTable)
+        {
+            ItemDrop.ItemData? hammer = FindHammer(player);
+            if (hammer == null)
+            {
+                player.Message(MessageHud.MessageType.TopLeft, "The Merchant Guild works through a hammer, and you have none.");
+                return;
+            }
+
+            if (!player.EquipItem(hammer))
+            {
+                return;
+            }
+        }
+
+        player.SetSelectedPiece(GuildMove.PseudoPiece);
+    }
+
+    // Any hammer, vanilla or modded, as long as it drives the hammer's own piece table.
+    private static ItemDrop.ItemData? FindHammer(Player player)
+    {
+        foreach (ItemDrop.ItemData item in player.GetInventory().GetAllItems())
+        {
+            if (item.m_shared.m_buildPieces == GuildMove.HammerTable)
+            {
+                return item;
+            }
+        }
+
+        return null;
     }
 }
 
@@ -288,6 +300,18 @@ static class Minimap_SetMapMode_Patch
 {
     private static bool Prefix(Minimap.MapMode mode)
     {
-        return !(mode == Minimap.MapMode.Large && MoveTargeting.KeyboardShortcutDown);
+        return !(mode == Minimap.MapMode.Large && MoveTargeting.ShortcutDown);
+    }
+}
+
+// Leaving the world tears the local player down without touching the build menu, so the carry has
+// to be cleared here or it would still be held when the next world loads.
+[HarmonyPatch(typeof(Game), nameof(Game.Logout))]
+static class Game_Logout_Patch
+{
+    static void Prefix()
+    {
+        MoveCarry.Drop(rebuildGhost: false);
+        MoveEffects.StopAll();
     }
 }

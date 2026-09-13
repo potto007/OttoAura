@@ -5,19 +5,41 @@ using UnityEngine;
 
 namespace OttoAura.AuraMove;
 
-// MoveEffects: the shimmer tween and audio/visual bursts that play on every client that has the
-// moved object loaded. Called from inside the RPC handler so the effect is network-visible without
-// spawning any networked objects.
+// MoveEffects: the Guild's conjuring. Five stages, each a comma-separated list of vanilla effect
+// prefab names from config, so the whole choreography is overridable without a rebuild.
+//
+//   Grab    local only, when the player takes hold: a summoning ring and a soft cast.
+//   Depart  every client, at the old spot, as the object starts to shrink.
+//   Travel  every client, one wisp lerped along an arc from the old spot to the new one.
+//   Arrive  every client, at the new spot, as the object grows back in.
+//   Finish  every client, at the new spot, when the object is whole again.
+//
+// Everything but Grab runs from inside the RPC handler, so every client that has the object loaded
+// sees the same conjuring, not only the player who paid.
 //
 // Scale was chosen over an alpha fade deliberately. Valheim's piece shaders are opaque and there
 // is no reliable _Color alpha to drive; a scale tween needs no shader assumptions, reverts
 // exactly, and reads as a dematerialise. localScale is never serialised, so nothing can leak
 // into the save.
+//
+// Nothing spawned here is ever parented to the moved object. An attached effect would be dragged
+// through the relocation and would inherit the shimmer's near-zero scale, so every effect is a
+// free-standing world instance at a fixed position, and this class owns its lifetime rather than
+// trusting the prefab's own TimedDestruction (which is a no-op once its ZNetView is gone).
 internal static class MoveEffects
 {
     // Shrink to this fraction of the original scale, never exactly zero so the transform stays
     // mathematically well-defined throughout the tween.
     private const float ScaleEpsilon = 0.02f;
+
+    // Hard ceiling on any effect instance we spawn. Vanilla one-shots are all well under this;
+    // the cap exists so a looping or attach-only prefab someone puts in the config cannot pile up.
+    private const float EffectLifetime = 5f;
+
+    // How high above the straight line the travelling wisp arcs, as a fraction of the distance
+    // covered, and the ceiling on that in metres so a long move does not launch it into orbit.
+    private const float ArcFraction = 0.25f;
+    private const float ArcMaxHeight = 3f;
 
     // One in-flight shimmer. The object reference is kept so StopAll can put the scale back.
     private sealed class Tween
@@ -27,14 +49,75 @@ internal static class MoveEffects
         internal GameObject? Obj;
     }
 
+    // One spawned effect instance and the moment it must be gone by.
+    private struct Spawned
+    {
+        internal GameObject Obj;
+        internal float ExpiresAt;
+        internal bool IsGrab;
+    }
+
     // Keyed by instance ID so a second move on the same object cancels and cleans up the first
     // tween, even if it is mid-yield. The entry is registered before the coroutine starts: a
     // Shimmer Seconds of 0 runs the whole routine synchronously inside StartCoroutine, and an
     // entry written afterwards would never be cleared.
     private static readonly Dictionary<int, Tween> _active = new();
 
-    // Guard so each unresolvable or networked fallback prefab name is warned about once only.
+    // Every effect instance this class has spawned and not yet destroyed. Reaped from Tick.
+    private static readonly List<Spawned> _spawned = new();
+
+    // Guard so each unresolvable effect prefab name is warned about once only.
     private static readonly HashSet<string> _warnedNames = new();
+
+    // Reap expired effect instances. Called every frame from AuraMoveController.Tick, before its
+    // own local-player guard, so cleanup keeps running while the player is being torn down.
+    internal static void Tick()
+    {
+        float now = Time.time;
+        for (int i = _spawned.Count - 1; i >= 0; i--)
+        {
+            Spawned entry = _spawned[i];
+            if (entry.Obj == null)
+            {
+                _spawned.RemoveAt(i);
+                continue;
+            }
+
+            if (now >= entry.ExpiresAt)
+            {
+                UnityEngine.Object.Destroy(entry.Obj);
+                _spawned.RemoveAt(i);
+            }
+        }
+    }
+
+    // Stage 1. The player has just taken hold of something. Local only: nobody else has been told
+    // about the grab yet, and nothing has been charged.
+    internal static void PlayGrab(Piece source)
+    {
+        StopGrab();
+        // Rings and circles want to lie flat on the ground, so they are spawned world-aligned
+        // rather than following the piece's yaw.
+        Spawn(OttoAuraPlugin.AuraMoveGrabEffects.Value, source.transform.position, Quaternion.identity, isGrab: true);
+    }
+
+    // The grab ended, by cancel or by confirm. Take the summoning ring away with it.
+    internal static void StopGrab()
+    {
+        for (int i = _spawned.Count - 1; i >= 0; i--)
+        {
+            if (!_spawned[i].IsGrab)
+            {
+                continue;
+            }
+
+            if (_spawned[i].Obj != null)
+            {
+                UnityEngine.Object.Destroy(_spawned[i].Obj);
+            }
+            _spawned.RemoveAt(i);
+        }
+    }
 
     internal static void PlayRelocation(
         GameObject movedObject,
@@ -59,7 +142,7 @@ internal static class MoveEffects
         // The ZDO is written the moment the RPC lands, but ZSyncTransform.OwnerSync writes the
         // live transform straight back into the ZDO every frame on the owning client. Holding
         // the object at the old spot for the first half of a tween would let that undo the move
-        // outright, so anything that syncs its transform snaps instead. Both bursts still play.
+        // outright, so anything that syncs its transform snaps instead. Every stage still fires.
         if (seconds > 0f && SyncsTransform(movedObject))
         {
             seconds = 0f;
@@ -77,6 +160,7 @@ internal static class MoveEffects
     private static bool SyncsTransform(GameObject movedObject) =>
         movedObject.TryGetComponent(out ZSyncTransform sync) && (sync.m_syncPosition || sync.m_syncRotation);
 
+    // Shutdown, logout, and anything else that tears the world down under a shimmer.
     internal static void StopAll()
     {
         foreach (Tween tween in _active.Values)
@@ -84,6 +168,15 @@ internal static class MoveEffects
             Stop(tween);
         }
         _active.Clear();
+
+        foreach (Spawned entry in _spawned)
+        {
+            if (entry.Obj != null)
+            {
+                UnityEngine.Object.Destroy(entry.Obj);
+            }
+        }
+        _spawned.Clear();
     }
 
     // Halt a tween and put the object back to the size it started at.
@@ -124,25 +217,47 @@ internal static class MoveEffects
         float half = seconds / 2f;
         Vector3 epsilon = originalScale * ScaleEpsilon;
 
-        // Step 1: burst at the old spot.
-        PlayBurst(movedObject, fromPosition, fromRotation);
+        // Stage 2: the object lets go of the old spot.
+        Spawn(OttoAuraPlugin.AuraMoveDepartEffects.Value, fromPosition, Quaternion.identity, isGrab: false);
 
         if (seconds > 0f)
         {
-            // Step 2: shrink over the first half.
+            // Stage 3: the wisp crosses while the object shrinks, so it lands exactly as the
+            // object reappears. Its lifetime is capped like everything else, in case this
+            // routine is stopped mid-flight before it can destroy the wisp itself.
+            GameObject? wisp = SpawnOne(
+                FirstName(OttoAuraPlugin.AuraMoveTravelEffect.Value), fromPosition, Quaternion.identity, isGrab: false);
+
+            float arc = Mathf.Min(Vector3.Distance(fromPosition, toPosition) * ArcFraction, ArcMaxHeight);
+
             float elapsed = 0f;
             while (elapsed < half)
             {
                 if (movedObject == null)
                 {
                     // Destroyed before apply() ran - do not call it; nothing to restore.
+                    DestroyTracked(wisp);
                     Finish(id, tween);
                     yield break;
                 }
+
                 elapsed += Time.deltaTime;
-                movedObject.transform.localScale = Vector3.Lerp(originalScale, epsilon, Mathf.Clamp01(elapsed / half));
+                float t = Mathf.Clamp01(elapsed / half);
+                movedObject.transform.localScale = Vector3.Lerp(originalScale, epsilon, t);
+
+                if (wisp != null)
+                {
+                    // Straight line plus a sine hump, so the wisp leaves and lands on the ground
+                    // and rides over whatever is between. No allocation per frame.
+                    Vector3 along = Vector3.Lerp(fromPosition, toPosition, t);
+                    along.y += arc * Mathf.Sin(t * Mathf.PI);
+                    wisp.transform.position = along;
+                }
+
                 yield return null;
             }
+
+            DestroyTracked(wisp);
 
             if (movedObject == null)
             {
@@ -152,12 +267,23 @@ internal static class MoveEffects
             movedObject.transform.localScale = epsilon;
         }
 
-        // Step 3: apply the relocation at the midpoint.
+        // Apply the relocation at the midpoint, then announce the arrival at the new spot.
         apply();
+
+        Spawn(OttoAuraPlugin.AuraMoveArriveEffects.Value, toPosition, Quaternion.identity, isGrab: false);
+
+        // The piece's own place effect is the exact sound and sparkle the game ships for placing
+        // that piece, so it rides along with the arrival where the piece has one. Vanilla owns the
+        // lifetime of what Create spawns, exactly as it does when the piece is built by hand.
+        Piece? piece = movedObject.GetComponent<Piece>();
+        if (piece != null && HasUsablePlaceEffect(piece))
+        {
+            piece.m_placeEffect.Create(toPosition, toRotation);
+        }
 
         if (seconds > 0f)
         {
-            // Step 4: grow back over the second half.
+            // Stage 4 continued: grow back over the second half.
             float elapsed = 0f;
             while (elapsed < half)
             {
@@ -179,26 +305,10 @@ internal static class MoveEffects
             }
         }
 
-        // Step 5: burst at the new spot, then restore the exact original scale.
-        PlayBurst(movedObject, toPosition, toRotation);
+        // Stage 5: the object is whole again.
+        Spawn(OttoAuraPlugin.AuraMoveFinishEffects.Value, toPosition, Quaternion.identity, isGrab: false);
         movedObject.transform.localScale = originalScale;
         Finish(id, tween);
-    }
-
-    private static void PlayBurst(GameObject movedObject, Vector3 position, Quaternion rotation)
-    {
-        // Preferred: the piece's own place effect is the exact sound and sparkle the game ships
-        // for placing that piece, so nothing has to be guessed and nothing can be missing.
-        Piece? piece = movedObject.GetComponent<Piece>();
-        if (piece != null && HasUsablePlaceEffect(piece))
-        {
-            piece.m_placeEffect.Create(position, rotation);
-            return;
-        }
-
-        // Fallback: comma-separated names from config, resolved by stable hash so a missing name
-        // warns once instead of spamming ZNetScene.GetPrefab's error log.
-        PlayFallbackBurst(position, rotation);
     }
 
     private static bool HasUsablePlaceEffect(Piece piece)
@@ -217,14 +327,22 @@ internal static class MoveEffects
         return false;
     }
 
-    private static void PlayFallbackBurst(Vector3 position, Quaternion rotation)
+    // Travel is a single prefab. Take the first name if somebody pastes a list into it anyway,
+    // rather than looking up the whole string and warning about a name nobody typed.
+    private static string FirstName(string csv)
     {
-        if (ZNetScene.instance == null)
+        if (string.IsNullOrWhiteSpace(csv))
         {
-            return;
+            return "";
         }
 
-        string csv = OttoAuraPlugin.AuraMoveEffectPrefabs.Value;
+        int comma = csv.IndexOf(',');
+        return (comma < 0 ? csv : csv.Substring(0, comma)).Trim();
+    }
+
+    // Spawn every prefab named in one comma-separated config entry.
+    private static void Spawn(string csv, Vector3 position, Quaternion rotation, bool isGrab)
+    {
         if (string.IsNullOrWhiteSpace(csv))
         {
             return;
@@ -232,34 +350,77 @@ internal static class MoveEffects
 
         foreach (string raw in csv.Split(','))
         {
-            string name = raw.Trim();
-            if (string.IsNullOrEmpty(name))
-            {
-                continue;
-            }
-
-            int hash = name.GetStableHashCode();
-            if (!ZNetScene.instance.m_namedPrefabs.TryGetValue(hash, out GameObject prefab))
-            {
-                if (_warnedNames.Add(name))
-                {
-                    OttoAuraPlugin.OttoAuraLogger.LogWarning($"AuraMove: effect prefab '{name}' not found in ZNetScene; skipped.");
-                }
-                continue;
-            }
-
-            // A ZNetView on a fallback prefab would spawn one copy per client instead of one
-            // total, populating the world with duplicates.
-            if (prefab.GetComponent<ZNetView>() != null)
-            {
-                if (_warnedNames.Add(name))
-                {
-                    OttoAuraPlugin.OttoAuraLogger.LogWarning($"AuraMove: effect prefab '{name}' has a ZNetView and would duplicate across clients; skipped.");
-                }
-                continue;
-            }
-
-            UnityEngine.Object.Instantiate(prefab, position, rotation);
+            SpawnOne(raw.Trim(), position, rotation, isGrab);
         }
+    }
+
+    // Resolve one effect prefab by name and instantiate it purely locally.
+    //
+    // Names are looked up in ZNetScene.m_namedPrefabs by stable hash rather than through
+    // GetPrefab, so a name that is not in this game version warns once instead of spamming
+    // GetPrefab's error log every move.
+    //
+    // Many of the magic-flavoured vanilla effects (the summon and guardstone families in
+    // particular) carry a ZNetView, and instantiating one of those as-is would create a networked
+    // object once per client. ZNetView.m_forceDisableInit makes ZNetView.Awake destroy itself
+    // instead of claiming a ZDO, which is how vanilla itself spawns preview-only copies, so the
+    // instance is local, silent on the wire, and identical to look at.
+    private static GameObject? SpawnOne(string name, Vector3 position, Quaternion rotation, bool isGrab)
+    {
+        if (string.IsNullOrEmpty(name) || ZNetScene.instance == null)
+        {
+            return null;
+        }
+
+        if (!ZNetScene.instance.m_namedPrefabs.TryGetValue(name.GetStableHashCode(), out GameObject prefab)
+            || prefab == null)
+        {
+            if (_warnedNames.Add(name))
+            {
+                OttoAuraPlugin.OttoAuraLogger.LogWarning($"AuraMove: effect prefab '{name}' not found in ZNetScene; skipped.");
+            }
+            return null;
+        }
+
+        GameObject instance;
+        bool previous = ZNetView.m_forceDisableInit;
+        ZNetView.m_forceDisableInit = true;
+        try
+        {
+            instance = UnityEngine.Object.Instantiate(prefab, position, rotation);
+        }
+        finally
+        {
+            ZNetView.m_forceDisableInit = previous;
+        }
+
+        _spawned.Add(new Spawned
+        {
+            Obj = instance,
+            ExpiresAt = Time.time + EffectLifetime,
+            IsGrab = isGrab,
+        });
+
+        return instance;
+    }
+
+    // Destroy one tracked instance early and forget it.
+    private static void DestroyTracked(GameObject? instance)
+    {
+        if (instance == null)
+        {
+            return;
+        }
+
+        for (int i = _spawned.Count - 1; i >= 0; i--)
+        {
+            if (_spawned[i].Obj == instance)
+            {
+                _spawned.RemoveAt(i);
+                break;
+            }
+        }
+
+        UnityEngine.Object.Destroy(instance);
     }
 }

@@ -35,7 +35,7 @@ The service lives in your hammer. Take the hammer out and you have a new build c
 
 With Guild Move selected, look at a chest, a lantern, a piece of furniture or a beehive. If the Guild is willing to move it, the crosshair says so and names the fee. Left click and the Guild takes hold: the real object stays where it stands, and you aim a ghost of it exactly the way you aim a build piece, with the same rotation, snapping and red invalid tint the hammer gives you, plus one rule of the Guild's own, nothing further than Max Move Distance from where the object stands now. Left click again to set it down. The fee comes out of your OttoPay Merchant Bank balance whole or nothing, the same way repairs do, so a balance that runs short moves nothing and charges nothing. Right click and the Guild lets go at no cost, and so does picking another piece, putting the hammer away, dying, teleporting or walking off.
 
-The object fades out where it stood and fades back in at the new spot. Other players on the server see the move too, because the new position goes through the object's ZDO. Chest contents and bed spawn points follow it.
+The move is a small conjuring. A summoning ring lights up at the object's feet the moment the Guild takes hold. On the confirming click the old spot flares and the object shrinks away, a wisp carries it across, and it grows back in at the new spot over a spirit summon and a runestone chime. Other players on the server see the same thing, because the effects are played from the same message that carries the new position, and the position itself goes through the object's ZDO. Chest contents and bed spawn points follow it. Set Shimmer Seconds to 0 if you would rather it just snapped.
 
 Some things cannot be moved. The Guild will not touch vehicles, live wards, armed traps or active shield generators. Workbenches and stonecutters are load-bearing build infrastructure and stay where they are. Plants are rooted. Any chest that another player has open is off limits. By default, non-furniture pieces that carry structural load are immovable too, so the building itself cannot shift; you can turn that rule off with the Support Is Immovable setting. The Allowed Prefabs and Denied Prefabs lists let you grant or block particular objects by prefab name regardless of the other rules.
 
@@ -68,8 +68,12 @@ The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every s
 | AuraMove: Support Is Immovable | On | | Non-furniture pieces that carry structural load cannot be moved. |
 | AuraMove: Allowed Prefabs | wood_fine_stack,... | | Comma-separated prefab names that skip every eligibility restriction and can always be moved. |
 | AuraMove: Denied Prefabs | fire_pit,... | | Comma-separated prefab names that can never be moved. |
-| AuraMove: Shimmer Seconds | 0.6 | 0 to 3 | Total duration of the shrink and grow animation. 0 snaps and only plays the burst effects. |
-| AuraMove: Effect Prefabs | vfx_Place_wood_pole,... | | Comma-separated fallback effect prefabs used when the moved piece has no place effect of its own. |
+| AuraMove: Shimmer Seconds | 1.2 | 0 to 3 | Total duration of the shrink and grow animation. 0 snaps and only plays the stage effects. |
+| AuraMove: Grab Effects | fx_summon_start,... | | Comma-separated vanilla effect prefabs played for you alone when the Guild takes hold of an object. |
+| AuraMove: Depart Effects | vfx_Potion_eitr_minor,... | | Comma-separated vanilla effect prefabs played at the old spot as the object leaves it. |
+| AuraMove: Travel Effect | vfx_pick_wisp | | One vanilla effect prefab flown along an arc from the old spot to the new one during the shimmer. Blank flies nothing. |
+| AuraMove: Arrive Effects | fx_summon_spirit_spawn,... | | Comma-separated vanilla effect prefabs played at the new spot as the object grows back in, alongside the piece's own place effect. |
+| AuraMove: Finish Effects | sfx_dverger_heal_finish | | Comma-separated vanilla effect prefabs played at the new spot once the object is whole again. |
 | AuraMove: Move Key | M + LeftAlt | | Takes the hammer out with Guild Move selected, and puts it away again. Not synced - set per client. |
 
 ## Other mods

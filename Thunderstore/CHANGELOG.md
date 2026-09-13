@@ -6,7 +6,8 @@
 - The fee is whole-or-nothing from your Merchant Bank balance. If the balance runs short, nothing moves and nothing is charged.
 - AuraMove lives in the hammer. A new Merchant Guild build category holds one entry, Guild Move: pick it, left click what you want moved, aim the ghost the way you aim any build piece, and left click again to set it down. Right click and the Guild lets go.
 - `M + LeftAlt` takes the hammer out with Guild Move already selected, and puts it away again. It is configurable per client. There is no separate gamepad binding: the build menu's Merchant Guild tab is the gamepad route, and the place button does the rest.
-- New server-synced settings under `5 - AuraMove`: `Enabled`, `Coins`, `Max Move Distance`, `Support Is Immovable`, `Allowed Prefabs`, `Denied Prefabs`, `Shimmer Seconds`, and `Effect Prefabs`. `Move Key` is per-client only.
+- The move is a conjuring, not a jump: a summoning ring at the object's feet when the Guild takes hold, an eitr flare and a portal sound as it leaves, a wisp arcing across to the new spot, and a spirit summon with a runestone chime as it grows back in. All vanilla effects, all client-side, none of them saved.
+- New server-synced settings under `5 - AuraMove`: `Enabled`, `Coins`, `Max Move Distance`, `Support Is Immovable`, `Allowed Prefabs`, `Denied Prefabs`, `Shimmer Seconds`, `Grab Effects`, `Depart Effects`, `Travel Effect`, `Arrive Effects`, and `Finish Effects`. Every effect stage takes comma-separated vanilla prefab names, so the whole choreography can be swapped without a rebuild. `Move Key` is per-client only.
 - Other players see the move because the new position goes through the object's ZDO. Chest contents and bed spawn points follow it.
 - Requires OttoPay 1.5.0; the AuraPay tooltip in the inventory now lists AuraBoost and AuraMove with the current key.
 

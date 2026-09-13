@@ -69,8 +69,12 @@ namespace OttoAura
             AuraMoveSupportImmovable = config("5 - AuraMove", "Support Is Immovable", Toggle.On, "If on, non-furniture pieces that carry structural load cannot be moved.");
             AuraMoveAllowedPrefabs = config("5 - AuraMove", "Allowed Prefabs", "wood_fine_stack,blackwood_stack,bone_stack,piece_beehive", "Comma-separated prefab names that skip every eligibility restriction and can always be moved.");
             AuraMoveDeniedPrefabs = config("5 - AuraMove", "Denied Prefabs", "fire_pit,bonfire,hearth,windmill", "Comma-separated prefab names that can never be moved.");
-            AuraMoveShimmerSeconds = config("5 - AuraMove", "Shimmer Seconds", 0.6f, new ConfigDescription("Total duration of the shrink and grow animation. 0 snaps and only plays the burst effects.", new AcceptableValueRange<float>(0f, 3f)));
-            AuraMoveEffectPrefabs = config("5 - AuraMove", "Effect Prefabs", "vfx_Place_wood_pole,sfx_build_cultivator", "Comma-separated fallback effect prefabs used when the moved piece has no place effect of its own.");
+            AuraMoveShimmerSeconds = config("5 - AuraMove", "Shimmer Seconds", 1.2f, new ConfigDescription("Total duration of the shrink and grow animation. 0 snaps and only plays the stage effects.", new AcceptableValueRange<float>(0f, 3f)));
+            AuraMoveGrabEffects = config("5 - AuraMove", "Grab Effects", "fx_summon_start,sfx_staffspiritcaller_cast", "Comma-separated vanilla effect prefabs played for you alone when the Guild takes hold of an object.");
+            AuraMoveDepartEffects = config("5 - AuraMove", "Depart Effects", "vfx_Potion_eitr_minor,sfx_OpenPortal", "Comma-separated vanilla effect prefabs played at the old spot as the object leaves it.");
+            AuraMoveTravelEffect = config("5 - AuraMove", "Travel Effect", "vfx_pick_wisp", "One vanilla effect prefab flown along an arc from the old spot to the new one during the shimmer. Blank flies nothing.");
+            AuraMoveArriveEffects = config("5 - AuraMove", "Arrive Effects", "fx_summon_spirit_spawn,sfx_runestone_activate", "Comma-separated vanilla effect prefabs played at the new spot as the object grows back in, alongside the piece's own place effect.");
+            AuraMoveFinishEffects = config("5 - AuraMove", "Finish Effects", "sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the new spot once the object is whole again.");
             AuraMoveKey = config("5 - AuraMove", "Move Key", new KeyboardShortcut(KeyCode.M, KeyCode.LeftAlt), "Keyboard shortcut that takes the hammer out and selects Guild Move, and puts it away again.", false);
 
             if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing) && Blacksmithing != null)
@@ -220,7 +224,11 @@ namespace OttoAura
         internal static ConfigEntry<string> AuraMoveAllowedPrefabs = null!;
         internal static ConfigEntry<string> AuraMoveDeniedPrefabs = null!;
         internal static ConfigEntry<float> AuraMoveShimmerSeconds = null!;
-        internal static ConfigEntry<string> AuraMoveEffectPrefabs = null!;
+        internal static ConfigEntry<string> AuraMoveGrabEffects = null!;
+        internal static ConfigEntry<string> AuraMoveDepartEffects = null!;
+        internal static ConfigEntry<string> AuraMoveTravelEffect = null!;
+        internal static ConfigEntry<string> AuraMoveArriveEffects = null!;
+        internal static ConfigEntry<string> AuraMoveFinishEffects = null!;
         internal static ConfigEntry<KeyboardShortcut> AuraMoveKey = null!;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)

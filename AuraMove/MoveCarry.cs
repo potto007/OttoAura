@@ -52,6 +52,10 @@ internal static class MoveCarry
         // uses when the hammer copies a piece.
         player.m_placeRotation = Mathf.RoundToInt(piece.transform.rotation.eulerAngles.y / player.m_placeRotationDegrees);
 
+        // The Guild's summoning ring at the object's feet. Local only: nobody else has been told
+        // about the grab, and nothing has been charged yet.
+        MoveEffects.PlayGrab(piece);
+
         // Rebuild the ghost now that GetSelectedPrefab answers with the carried prefab.
         player.SetupPlacementGhost();
         return true;
@@ -70,6 +74,9 @@ internal static class MoveCarry
         _carriedPrefab = null;
         _carriedName = "";
         _tooFar = false;
+
+        // The ring belongs to the carry, whether it ended in a cancel or in a move.
+        MoveEffects.StopGrab();
 
         Player? player = Player.m_localPlayer;
         if (rebuildGhost && player != null && player.InPlaceMode())

@@ -95,5 +95,10 @@ if __name__ == "__main__":
     try:
         main(sys.argv[1], "--dry-run" in sys.argv[2:])
     except RuntimeError as error:
+        # A re-run after a later step failed (for example Thunderstore) reaches Hexium with
+        # the version already up. That is the state the step wanted, so it is not a failure.
+        if "has already been uploaded" in str(error):
+            print(f"::notice::Hexium upload: {error}")
+            sys.exit(0)
         print(f"::error::Hexium upload: {error}", file=sys.stderr)
         sys.exit(1)

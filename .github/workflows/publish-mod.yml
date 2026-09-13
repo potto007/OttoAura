@@ -83,7 +83,11 @@ jobs:
           generate_release_notes: true
 
       # Runs before the Thunderstore action, which removes the zip from the workspace.
+      # continue-on-error so a re-dispatch after a Thunderstore failure still reaches
+      # Thunderstore when Hexium already holds the version. The script itself also
+      # treats that reply as success, but a tag checkout runs the tagged script.
       - name: Publish the package to Hexium
+        continue-on-error: true
         env:
           HEXIUM_TOKEN: ${{ secrets.HEXIUM_TOKEN }}
           HEXIUM_TEAM: ${{ vars.HEXIUM_TEAM }}

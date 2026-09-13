@@ -16,29 +16,76 @@ network traffic is one routed RPC that carries the new position and rotation.
 
 ## UX flow
 
-1. **Hover.** With no build tool out, the player looks at a placed object. A raycast from the
-   camera (`Player.m_removeRayMask`, 50 m, hit inside `Player.m_maxPlaceDistance` of `m_eye`,
-   `GetComponentInParent<Piece>()`) finds the piece. If the piece passes the eligibility rules a
-   prompt is appended to the crosshair hover name: `The Guild will move this for N coins [key]`.
-2. **Grab.** The AuraMove key (default keyboard `LeftAlt + M`, gamepad `JoyAltKeys` + `JoyButtonY`)
-   starts the move. Nothing is charged yet. A placement ghost of the same prefab appears, the real
-   object stays visible where it is, and a TopLeft message says the Guild has taken hold of it.
-3. **Aim.** The ghost follows `Player.PieceRayTest` each frame, is rotated by the mouse wheel or the
-   gamepad rotate buttons in `Player.m_placeRotationDegrees` steps, and is tinted invalid
-   (`Piece.SetInvalidPlacementHeightlight`) wherever the game would refuse the placement or the
-   destination is further than **Max Move Distance** from where the object stands now.
-4. **Confirm.** The same key again. The fee is charged first. If the withdrawal fails, a message is
-   shown and nothing moves. On success the RPC goes out.
-5. **Shimmer.** On every client that has the object loaded, the object shrinks away at the old spot
-   with a burst of VFX/SFX, is relocated, and grows back at the new spot with a second burst.
-6. **Cancel.** `Escape` or gamepad B, or any interrupt (player dies, teleports, opens the build
-   menu, walks out of range, the object is destroyed or unloaded). Nothing is charged on cancel.
+AuraMove is a build piece, not a hotkey mode. The service lives in the hammer as a build category
+of its own, "Merchant Guild", holding one pseudo-piece, "Guild Move". Selecting it puts the player
+in the game's own placement mode, so aiming, rotation, snapping, ward checks and the red invalid
+tint are all vanilla behaviour rather than a private ghost.
 
-AuraMove refuses all input while `Player.InPlaceMode()` is true. That single rule keeps it clear of
-the vanilla hammer ghost, of `Hud.IsPieceSelectionVisible()`, and of OttoRedecorate's
-`LeftControl + Mouse0`, which only ever fires with a hammer or Feaster in hand. Input is also
+1. **Open.** Take the hammer out and pick Guild Move, either from the Merchant Guild tab in the
+   build menu or with the AuraMove key (default `LeftAlt + M`), which takes the hammer out, selects
+   Guild Move, and puts the hammer away again when Guild Move is already selected. The tab and the
+   piece only exist while `AuraMoveController.IsAvailable`; with the feature off, or AuraPay off,
+   the category is removed from the hammer's piece table entirely.
+2. **Hover.** With Guild Move selected the ghost is the pseudo-piece, which has no renderers, so
+   the placement marker is all the player sees. `Player.GetHoveringPiece` supplies what the player
+   is pointing at, and if it passes the eligibility rules the crosshair says
+   `Left click and the Guild will move this for N coins`.
+3. **Grab.** Left click. Nothing is charged yet. The source object stays where it is, and
+   `MoveCarry` remembers it, so `PieceTable.GetSelectedPrefab` starts answering with the source
+   object's own prefab and `Player.SetupPlacementGhost` builds a real ghost of it.
+4. **Aim.** `Player.UpdatePlacementGhost` drives everything from here: the ghost follows the ray,
+   the mouse wheel and the gamepad rotate buttons turn it, and it goes red wherever the game would
+   refuse the placement. AuraMove adds one rule of its own in a postfix, **Max Move Distance** from
+   where the object stands now, which sets `m_placementStatus` to `Invalid` and tints the ghost.
+5. **Confirm.** Left click again. `Player.TryPlacePiece` is intercepted: nothing is instantiated,
+   the fee is charged first, and on success the RPC goes out. A destination the game refuses gets
+   vanilla's own message; a destination that is only too far gets the Guild's.
+6. **Shimmer.** On every client that has the object loaded, the object shrinks away at the old
+   spot with a burst of VFX/SFX, is relocated, and grows back at the new spot with a second burst.
+7. **Cancel.** Right click, which the Guild reads as "let go" instead of the hammer's remove, so a
+   cancel can never smash what the player is pointing at. The carry is also dropped by choosing a
+   different piece or category, putting the hammer away, dying, teleporting, logging out, walking
+   out of range, switching AuraPay or AuraMove off, and the source object being destroyed or
+   unloaded. Nothing is charged on any of these.
+
+Vanilla's own input gates do the work that the old `InPlaceMode` refusal used to do: with the
+hammer out there is no crosshair-mode conflict left to avoid. The AuraMove key alone is still
 ignored while `Menu.IsVisible()`, `InventoryGui.IsVisible()`, `TextInput.IsVisible()`,
-`Console.IsVisible()`, `Chat.instance.HasFocus()`, or the large map is open.
+`Console.IsVisible()`, `Chat.instance.HasFocus()`, the build menu is open, or the large map is up.
+
+## Hammer integration
+
+The pieces of vanilla this rests on, and why each one is touched.
+
+**A category past `Piece.PieceCategory.Max`.** `Max` is 9 and `All` is 100, so 10 is the first free
+value, and it is the value Jotunn hands its first custom category, which keeps the two lined up
+rather than fighting. `Max` itself cannot be used: `PieceTable.GetSelectedCategory` treats both
+`Max` and `All` as "nothing selected" and resets the selection, so a piece parked there could never
+stay selected. Vanilla sizes `m_availablePiecesByCategory` to 9 lists and both selection arrays to
+9 entries, so `GuildMove.EnsureCategoryLists` grows all three to 11 before anything indexes them.
+
+**The piece is not in `PieceTable.m_pieces`.** Vanilla only offers a piece from `m_pieces` once its
+name is in the player's known-recipe list, and that list is saved into the character file. Adding
+the pseudo-piece to `m_availablePieces`, `m_enabledPieces` and the category list in a postfix on
+`PieceTable.UpdateAvailable` keeps the service out of the save entirely and makes availability a
+pure function of the config and of AuraPay: the same postfix takes the piece and the category away
+again the moment either is switched off, and `AuraMoveController.Tick` calls
+`Player.UpdateAvailablePiecesList` on the frame availability changes so the tab appears and
+disappears without waiting for an equipment change.
+
+**The tab.** `Hud.UpdateBuild` shows tab `i` for category `i`, so a table with more categories than
+the HUD has tabs never draws the last one. `GuildMove.EnsureTabs` clones tab 0 when that happens,
+re-attaches `Hud.OnLeftClickCategory` (an `Action` field, which `Instantiate` does not copy), and
+positions the clone itself only where the tab parent has no layout group. A HUD with no category
+tabs at all is left alone: the modern build menu lists `PieceTable.m_availablePieces` and ignores
+categories, so the piece is still reachable there through its `Misc` usage tag.
+
+**The label.** `m_categoryLabels` entries go through `Localization.Localize`, which leaves a string
+without a `$` token untouched, so "Merchant Guild" needs no localization registration.
+
+**The description.** `Hud.SetupPieceInfo` reads `Piece.m_description` every frame, so
+`GuildMove.RefreshDescription` rewrites it whenever the fee, the distance or the carried object
+changes. That is how the panel names the live fee and what the Guild is holding.
 
 ## Configuration
 
@@ -56,9 +103,12 @@ key binding belongs to the client, the same split OttoRedecorate uses.
 | Denied Prefabs | `AuraMoveDeniedPrefabs` | string | `fire_pit,bonfire,hearth,windmill` | | yes | Comma separated prefab names that can never move. |
 | Shimmer Seconds | `AuraMoveShimmerSeconds` | float | 0.6 | 0-3 | yes | Length of the fade out and fade in together. 0 snaps and only plays the effects. |
 | Effect Prefabs | `AuraMoveEffectPrefabs` | string | `vfx_Place_wood_pole,sfx_build_cultivator` | | yes | Fallback effect prefabs, used only when the moved piece has no place effect of its own. |
-| Move Key | `AuraMoveKey` | KeyboardShortcut | `M + LeftAlt` | | no | Grab and confirm. |
-| Gamepad Modifier | `AuraMoveGamepadModifier` | string | `JoyAltKeys` | | no | ZInput button held with the gamepad button. Empty means no modifier. |
-| Gamepad Button | `AuraMoveGamepadButton` | string | `JoyButtonY` | | no | ZInput button that grabs and confirms. |
+| Move Key | `AuraMoveKey` | KeyboardShortcut | `M + LeftAlt` | | no | Takes the hammer out with Guild Move selected, and puts it away again. |
+
+`Gamepad Modifier` and `Gamepad Button` were dropped in the hammer rework. The grab and the
+confirm are the build tool's own place button now, which is already bound on both devices, and the
+build menu's Merchant Guild tab is the gamepad route to the piece, so a second binding of our own
+would only be a way to get the two out of step.
 
 Defaults chosen against the vanilla binding table in `ZInput.Reset` (verified in
 `assembly_utils_publicized.dll`): `M` is vanilla's Map button (ZInput line ~2997:
@@ -67,18 +117,19 @@ Defaults chosen against the vanilla binding table in `ZInput.Reset` (verified in
 `Alt+M` would open the large map as a side effect of grabbing a piece. A Harmony prefix on
 `Minimap.SetMapMode(Minimap.MapMode mode)` skips the `Large` transition for exactly the frame
 that `MoveTargeting.KeyboardShortcutDown` is true (shortcut down, AuraMove available, input not
-blocked). `Small` and `None` are never blocked, so the map can always close. `JoyAltKeys` is
-vanilla's own alternate-layer modifier, so the gamepad pair only fires when the player asks for it.
+blocked). `Small` and `None` are never blocked, so the map can always close. The shortcut is the only key AuraMove reads directly; everything else comes through the build
+tool.
 
 ## Eligibility rules
 
 A direct port of `OttoRedecorate.Redecorate.CanMove`
 (`/home/potto/src/valheim/mods/OttoRedecorate/OttoRedecorate/Redecorate.cs:408-525`), minus the
-hammer/Feaster tool rules, which do not apply because AuraMove works with empty hands. Checks run
+hammer/Feaster tool rules, which the Guild Move piece replaces. Checks run
 in order and the first match decides. Every deny path returns a `MoveDenial` value so the caller
 can say why.
 
-1. No local player, dead player, or `Player.InPlaceMode()` -> deny.
+1. No local player or dead player -> deny. Build mode is no longer a bar: every check now runs
+   with the hammer out.
 2. No `Piece`, no `m_nview`, `!m_nview.IsValid()`, or `!piece.IsPlacedByPlayer()` -> deny.
 3. Prefab name (`Utils.GetPrefabName(piece.gameObject.name)`) in **Allowed Prefabs** -> allow, skip the rest.
 4. Prefab name in **Denied Prefabs** -> deny.
@@ -126,13 +177,13 @@ identity never syncs its rotation and remote clients keep the stale one. OttoRed
 target yaw by 0.01 degrees whenever the euler angles round to exactly zero, which sets the flag
 and is invisible in game. `MoveRelocation.AvoidIdentity` owns that rule.
 
-**Placement ghost.** `Player.SetupPlacementGhost` cannot be reused: it reads
-`m_buildPieces.GetSelectedPrefab()`, and so does one branch of `Player.UpdatePlacementGhost`, both
-of which are null outside build mode. AuraMove builds and drives its own ghost, a trimmed port of
-`SetupPlacementGhost` (verified against `Player.cs:3671-3824` in the decompiled game assembly), and
-never touches `Player.m_placementGhost`. It reuses the parts of the game that are safe outside
-build mode: `Player.PieceRayTest`, `Player.TestGhostClipping`, `Location.IsInsideNoBuildLocation`,
-`PrivateArea.CheckAccess`, `Piece.SetInvalidPlacementHeightlight`.
+**Placement ghost.** There is no private ghost any more. While the Guild has hold of something,
+`PieceTable.GetSelectedPrefab` answers with the source object's own prefab, so
+`Player.SetupPlacementGhost` and `Player.UpdatePlacementGhost` build and drive the ghost with all
+of the game's own rules, and `Player.m_placementGhost` is the one the whole HUD already knows
+about. The swap is guarded on the vanilla result being the Guild Move pseudo-piece, so no other
+piece table and no other selection can see it. `MovePlacement.cs`, the hand-rolled port of
+`SetupPlacementGhost`, is gone with it.
 
 ## Effect design
 
@@ -178,8 +229,9 @@ restores every tracked original scale on shutdown.
 
 ```
 AuraMove/MoveEligibility.cs     MoveDenial enum, CanMove/Evaluate, denial text
-AuraMove/MoveTargeting.cs       hover raycast, input, rotation input, crosshair prompt patch
-AuraMove/MovePlacement.cs       ghost build/update/destroy, placement validity
+AuraMove/MoveTargeting.cs       the AuraMove key, input gates, crosshair prompt patch
+AuraMove/GuildMove.cs           pseudo-piece, Merchant Guild category, piece table and tab patches
+AuraMove/MoveCarry.cs           carry state and the vanilla placement patches
 AuraMove/MoveRelocation.cs      RPC register/send/handle, ZDO write, UpdateOrientation
 AuraMove/MoveEffects.cs         bursts and the shimmer coroutine
 AuraMove/AuraMoveController.cs  state machine, fee, player messages, Init/Tick/Shutdown
@@ -204,8 +256,6 @@ internal static ConfigEntry<string> AuraMoveDeniedPrefabs = null!;
 internal static ConfigEntry<float> AuraMoveShimmerSeconds = null!;
 internal static ConfigEntry<string> AuraMoveEffectPrefabs = null!;
 internal static ConfigEntry<KeyboardShortcut> AuraMoveKey = null!;
-internal static ConfigEntry<string> AuraMoveGamepadModifier = null!;
-internal static ConfigEntry<string> AuraMoveGamepadButton = null!;
 
 internal enum MoveDenial
 {
@@ -223,25 +273,35 @@ internal static class MoveEligibility
 
 internal static class MoveTargeting
 {
-    internal static Piece? Hovered { get; }
     internal static bool InputBlocked { get; }
+    internal static bool ShortcutDown { get; }
     internal static string KeyLabel { get; }
-    internal static void UpdateHover();
-    internal static void ClearHover();
-    internal static bool ActivatePressed();
-    internal static bool CancelPressed();
-    internal static int ConsumeRotationSteps();
 }
 
-internal static class MovePlacement
+internal static class GuildMove
 {
-    internal static bool Active { get; }
-    internal static bool IsValid { get; }
-    internal static Vector3 Position { get; }
-    internal static Quaternion Rotation { get; }
-    internal static bool Begin(Piece piece);
-    internal static void UpdateGhost(Piece piece);
-    internal static void Cancel();
+    internal const Piece.PieceCategory Category = (Piece.PieceCategory)10;
+    internal static Piece? PseudoPiece { get; }
+    internal static PieceTable? HammerTable { get; }
+    internal static bool IsPseudoPiece(Piece? piece);
+    internal static bool IsSelectedBy(Player? player);
+    internal static void Setup(ObjectDB db);
+    internal static void Shutdown();
+    internal static void RefreshDescription();
+    internal static void InjectInto(PieceTable table);
+    internal static void EnsureTabs(PieceTable? table);
+}
+
+internal static class MoveCarry
+{
+    internal static bool IsCarrying { get; }
+    internal static Piece? Source { get; }
+    internal static GameObject? CarriedPrefab { get; }
+    internal static string CarriedName { get; }
+    internal static bool TooFar { get; }
+    internal static bool Grab(Player player, Piece piece);
+    internal static void Drop(bool rebuildGhost);
+    internal static void ApplyDistanceRule(Player player);
 }
 
 internal static class MoveRelocation
@@ -263,11 +323,11 @@ internal static class MoveEffects
 internal static class AuraMoveController
 {
     internal static bool IsAvailable { get; }
-    internal static bool IsMoving { get; }
-    internal static Piece? Selected { get; }
     internal static void Init();
     internal static void Tick();
     internal static void Shutdown();
+    internal static bool HandlePlaceClick(Player player);
+    internal static void CancelByPlayer(Player player);
 }
 ```
 
@@ -275,3 +335,36 @@ internal static class AuraMoveController
 `OttoAuraPlugin.AuraMoveEnabled.Value == OttoAuraPlugin.Toggle.On && OttoPayBridge.IsAuraPayEnabled()`,
 re-read every frame because the server can switch the setting and the player can switch AuraPay at
 any moment, exactly as `AuraBoostEffect.IsActive` does.
+
+## Harmony hooks
+
+| Hook | Kind | Why |
+| --- | --- | --- |
+| `ObjectDB.Awake` | postfix | Build the pseudo-piece; the hammer's piece table and the Coins icon live in the item database. |
+| `ObjectDB.CopyOtherDB` | postfix | Joining a server rebuilds the database, so resolve the hammer table again. |
+| `PieceTable.UpdateAvailable` | postfix | Put the pseudo-piece and the Merchant Guild category back into the hammer table, or take them away when the service is off. |
+| `PieceTable.GetSelectedPrefab` | postfix | While carrying, hand vanilla the source object's prefab so it builds and drives the ghost. |
+| `Player.GetBuildSelection` | postfix | Put the pseudo-piece back for the build panel, so it names the Guild's fee and not the carried object's build cost. |
+| `Player.UpdatePlacementGhost` | postfix | Apply Max Move Distance as one more invalid condition, on top of every vanilla rule. |
+| `Player.TryPlacePiece` | prefix | The left click: take hold, or charge and send the move. Never builds anything. |
+| `Player.PlacePiece` | prefix | Belt and braces: the pseudo-piece can never be instantiated. |
+| `Player.RemovePiece` | prefix | While carrying, right click means "let go" rather than the hammer's remove. |
+| `Player.SetSelectedPiece(Vector2Int)` | prefix | Choosing another piece drops the carry before the ghost is rebuilt. |
+| `Player.SetBuildCategory(int)` / `(PieceCategory)` | prefix | Same, for the category tabs. |
+| `Player.SetPlaceMode` | prefix | Any equipment change, including putting the hammer away and dying, drops the carry. |
+| `Hud.UpdateCrosshair` | postfix | The prompt that says what a click will do. |
+| `Minimap.SetMapMode` | prefix | Alt+M would also open the large map, because vanilla's Map button ignores Alt. |
+| `Game.Logout` | prefix | Leaving the world clears the carry and stops any shimmer. |
+| `Game.Start` | postfix | Register the relocation RPC (unchanged). |
+
+`Menu.Show` is no longer patched. Escape was the old cancel key and had to be kept away from the
+pause menu; right click is the cancel now, so Escape does what it always did.
+
+## Known limitations
+
+- A destination that overlaps the source object, or another piece, is accepted wherever vanilla
+  would accept it. The Guild is exactly as fussy as the hammer, no more.
+- Taking hold costs the hammer's attack stamina check, so a click with an empty stamina bar
+  flashes the bar instead of grabbing. Nothing is charged.
+- Where the HUD prefab carries no category tabs, the Merchant Guild tab cannot be drawn. The piece
+  is still in the modern build menu under the Misc usage tag.

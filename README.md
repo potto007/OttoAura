@@ -29,9 +29,11 @@ Only things players make count. Terrain counts when it is clearly hoed into a pa
 
 ## AuraMove
 
-While AuraPay is on, the Merchant Guild offers one more service: for a small coin fee it picks a placed object up and sets it down a short distance away, contents and state intact, so you do not have to smash it and build a new one. Look at a chest, a lantern, a piece of furniture or a beehive with empty hands. If the Guild is willing to move it, the hover text says so and names the key.
+While AuraPay is on, the Merchant Guild offers one more service: for a small coin fee it picks a placed object up and sets it down a short distance away, contents and state intact, so you do not have to smash it and build a new one.
 
-The AuraPay panel in the inventory reminds you of the current key. Press that key to grab the object. A placement ghost appears where you are looking while the real object stays put, and you aim it the way you aim a build piece: the mouse wheel or the gamepad rotate buttons turn it, and the ghost goes red wherever the Guild will not set it down, including anywhere past Max Move Distance from where the object stands now. Press the key again to confirm. The fee comes out of your OttoPay Merchant Bank balance whole or nothing, the same way repairs do, so a balance that runs short moves nothing and charges nothing. Escape, or the gamepad B button, lets go at no cost, and so does dying, teleporting or taking out a build tool.
+The service lives in your hammer. Take the hammer out and you have a new build category, Merchant Guild, holding one entry, Guild Move. Pick it from the build menu, or press the Move Key (`LeftAlt + M` by default) to take the hammer out with Guild Move already selected. The same key puts the hammer away again. The AuraPay panel in the inventory reminds you of the key. With the service switched off, or AuraPay off, the category is not there at all.
+
+With Guild Move selected, look at a chest, a lantern, a piece of furniture or a beehive. If the Guild is willing to move it, the crosshair says so and names the fee. Left click and the Guild takes hold: the real object stays where it stands, and you aim a ghost of it exactly the way you aim a build piece, with the same rotation, snapping and red invalid tint the hammer gives you, plus one rule of the Guild's own, nothing further than Max Move Distance from where the object stands now. Left click again to set it down. The fee comes out of your OttoPay Merchant Bank balance whole or nothing, the same way repairs do, so a balance that runs short moves nothing and charges nothing. Right click and the Guild lets go at no cost, and so does picking another piece, putting the hammer away, dying, teleporting or walking off.
 
 The object fades out where it stood and fades back in at the new spot. Other players on the server see the move too, because the new position goes through the object's ZDO. Chest contents and bed spawn points follow it.
 
@@ -45,7 +47,7 @@ If you also install it on the server, the server config wins and the clients fol
 
 ## Configuration
 
-The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every setting below is synced from the server except Show Heal Text and the three AuraMove input settings.
+The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every setting below is synced from the server except Show Heal Text and the AuraMove Move Key.
 
 | Setting | Default | Range | Meaning |
 | --- | --- | --- | --- |
@@ -68,9 +70,7 @@ The config file is `potto007.OttoAura.cfg` in the BepInEx config folder. Every s
 | AuraMove: Denied Prefabs | fire_pit,... | | Comma-separated prefab names that can never be moved. |
 | AuraMove: Shimmer Seconds | 0.6 | 0 to 3 | Total duration of the shrink and grow animation. 0 snaps and only plays the burst effects. |
 | AuraMove: Effect Prefabs | vfx_Place_wood_pole,... | | Comma-separated fallback effect prefabs used when the moved piece has no place effect of its own. |
-| AuraMove: Move Key | M + LeftAlt | | Keyboard shortcut to grab and confirm a move. Not synced - set per client. |
-| AuraMove: Gamepad Modifier | JoyAltKeys | | ZInput button held with the gamepad button. Leave empty for no modifier. Not synced - set per client. |
-| AuraMove: Gamepad Button | JoyButtonY | | ZInput button that grabs and confirms a move. Not synced - set per client. |
+| AuraMove: Move Key | M + LeftAlt | | Takes the hammer out with Guild Move selected, and puts it away again. Not synced - set per client. |
 
 ## Other mods
 

@@ -175,6 +175,7 @@ static class PrivateAreaGetHoverTextPatch
         if (__instance.IsEnabled() && __instance.HaveLocalAccess())
         {
             __result += WardAura.HoverLine(__instance);
+            __result += AuraTrade.AuraTradeController.HoverLine();
         }
     }
 }

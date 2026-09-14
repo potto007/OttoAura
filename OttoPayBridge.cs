@@ -13,6 +13,7 @@ internal static class OttoPayBridge
     private static MethodInfo? _tryWithdraw;
     private static MethodInfo? _registerAuraService;
     private static MethodInfo? _unregisterAuraService;
+    private static MethodInfo? _tryDeposit;
 
     internal static bool IsAuraPayEnabled()
     {
@@ -25,6 +26,25 @@ internal static class OttoPayBridge
     {
         Bind();
         return _tryWithdraw != null && (bool)_tryWithdraw.Invoke(null, new object[] { amount });
+    }
+
+    // True once OttoPay's deposit API is there. It arrived in OttoPay 1.6.0; without it AuraTrade
+    // stays dormant and nothing else changes.
+    internal static bool CanDeposit
+    {
+        get
+        {
+            Bind();
+            return _tryDeposit != null;
+        }
+    }
+
+    // Credits the whole amount or nothing: false for a non-member, a negative amount, or a balance
+    // that would overflow. Zero is a successful no-op.
+    internal static bool TryDeposit(int amount)
+    {
+        Bind();
+        return _tryDeposit != null && (bool)_tryDeposit.Invoke(null, new object[] { amount });
     }
 
     // Registers a named service with the OttoPay 1.5.0 tooltip API. The describe delegate is
@@ -69,6 +89,14 @@ internal static class OttoPayBridge
             _registerAuraService = null;
             _unregisterAuraService = null;
             OttoAuraPlugin.OttoAuraLogger.LogWarning("OttoPay's RegisterAuraService API was not found. The AuraPay tooltip will not list OttoAura's services.");
+        }
+
+        // Deposit API is optional too: added in OttoPay 1.6.0 for AuraTrade. Missing it only keeps
+        // AuraTrade dormant.
+        _tryDeposit = api == null ? null : AccessTools.Method(api, "TryDeposit", new[] { typeof(int) });
+        if (_tryDeposit == null)
+        {
+            OttoAuraPlugin.OttoAuraLogger.LogWarning("OttoPay's TryDeposit API was not found. AuraTrade stays off until OttoPay 1.6.0 is installed.");
         }
     }
 }

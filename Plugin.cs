@@ -29,12 +29,11 @@ namespace OttoAura
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
         private static string ConfigFileFullPath = Paths.ConfigPath + Path.DirectorySeparatorChar + ConfigFileName;
-        internal static string ConnectionError = "";
         private readonly Harmony _harmony = new(ModGUID);
 
         public static readonly ManualLogSource OttoAuraLogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
 
-        private static readonly ConfigSync ConfigSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
+        private static readonly ConfigSync ConfigSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = false };
 
         internal static CraftingStation craftingStationClone = null!;
         internal static OttoAuraPlugin context = null!;

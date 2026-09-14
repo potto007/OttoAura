@@ -53,7 +53,7 @@ The valuables leave your inventory before the coins are credited, and if the Mer
 
 OttoAura is a client mod, so it works on a server that does not have it.
 
-If you also install it on the server, the server config wins and the clients follow it. The file watcher picks up edits you make to the server's config file while it runs. A server with the mod also checks the version of each client that joins, and it disconnects any client that does not have the same version.
+If you also install it on the server, the server config wins and the clients follow it. The file watcher picks up edits you make to the server's config file while it runs. A client without OttoAura can still join a server that has it. A client with OttoAura must run the same version as the server, or it is turned away with a message naming both versions.
 
 ## Configuration
 

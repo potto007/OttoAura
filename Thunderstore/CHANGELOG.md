@@ -8,6 +8,7 @@
 - Every valuable's tooltip shows what AuraTrade would pay for one and for the whole stack: gross worth, the fee, and the net. The deposit arrow's tooltip shows the same for what you are holding, and the ward's hover text shows it for everything you carry.
 - New server-synced settings under `AuraTrade`: `Enabled`, `FlatFee`, `PercentFee`, `DeniedItems`, `ShimmerSeconds`, `DepartEffects`, `TravelEffect` and `ArriveEffects`.
 - AuraTrade needs OttoPay 1.6.0. With an older OttoPay it stays off and everything else works as before.
+- The version check is ServerSync's alone. A client without OttoAura can join a server that has it, and a client with OttoAura only has to match the server's version. Before, the server also compared the DLL file itself and turned away every client without that exact file, OttoAura or not. A server still on 1.3.0 keeps doing that, so update the server first.
 
 ## 1.3.0
 

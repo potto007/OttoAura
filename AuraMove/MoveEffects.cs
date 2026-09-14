@@ -371,7 +371,7 @@ internal static class MoveEffects
 
     // Travel is a single prefab. Take the first name if somebody pastes a list into it anyway,
     // rather than looking up the whole string and warning about a name nobody typed.
-    private static string FirstName(string csv)
+    internal static string FirstName(string csv)
     {
         if (string.IsNullOrWhiteSpace(csv))
         {
@@ -383,7 +383,7 @@ internal static class MoveEffects
     }
 
     // Spawn every prefab named in one comma-separated config entry.
-    private static void Spawn(string csv, Vector3 position, Quaternion rotation, bool isGrab)
+    internal static void Spawn(string csv, Vector3 position, Quaternion rotation, bool isGrab)
     {
         if (string.IsNullOrWhiteSpace(csv))
         {
@@ -407,7 +407,7 @@ internal static class MoveEffects
     // object once per client. ZNetView.m_forceDisableInit makes ZNetView.Awake destroy itself
     // instead of claiming a ZDO, which is how vanilla itself spawns preview-only copies, so the
     // instance is local, silent on the wire, and identical to look at.
-    private static GameObject? SpawnOne(string name, Vector3 position, Quaternion rotation, bool isGrab)
+    internal static GameObject? SpawnOne(string name, Vector3 position, Quaternion rotation, bool isGrab)
     {
         if (string.IsNullOrEmpty(name) || ZNetScene.instance == null)
         {
@@ -419,7 +419,7 @@ internal static class MoveEffects
         {
             if (_warnedNames.Add(name))
             {
-                OttoAuraPlugin.OttoAuraLogger.LogWarning($"AuraMove: effect prefab '{name}' not found in ZNetScene; skipped.");
+                OttoAuraPlugin.OttoAuraLogger.LogWarning($"OttoAura: effect prefab '{name}' not found in ZNetScene; skipped.");
             }
             return null;
         }
@@ -447,7 +447,7 @@ internal static class MoveEffects
     }
 
     // Destroy one tracked instance early and forget it.
-    private static void DestroyTracked(GameObject? instance)
+    internal static void DestroyTracked(GameObject? instance)
     {
         if (instance == null)
         {

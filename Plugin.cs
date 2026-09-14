@@ -83,6 +83,15 @@ namespace OttoAura
             AuraMoveFinishEffects = config("AuraMove", "FinishEffects", "sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the new spot once the object is whole again.");
             AuraMoveKey = config("AuraMove", "MoveKey", new KeyboardShortcut(KeyCode.M, KeyCode.LeftAlt), "Keyboard shortcut that takes the hammer out and selects Guild Move, and puts it away again.", false);
 
+            AuraTradeEnabled = config("AuraTrade", "Enabled", Toggle.On, "If on, Merchant Bank members with AuraPay on can sell valuables to the Merchant Guild at a ward they may use. Needs OttoPay 1.6.0.");
+            AuraTradeFlatFee = config("AuraTrade", "FlatFee", 5, new ConfigDescription("Coins the AuraPay network keeps from every trade, however large. Charged once per trade, so one big trade keeps more coins than several small ones.", new AcceptableValueRange<int>(0, 1000)));
+            AuraTradePercentFee = config("AuraTrade", "PercentFee", 3f, new ConfigDescription("Percent of a trade's gross worth the AuraPay network keeps on top of FlatFee, rounded up to whole coins.", new AcceptableValueRange<float>(0f, 50f)));
+            AuraTradeDeniedItems = config("AuraTrade", "DeniedItems", "", "Comma-separated item prefab names the Merchant Guild will not buy, for example Ruby,AmberPearl. Coins are never bought.");
+            AuraTradeShimmerSeconds = config("AuraTrade", "ShimmerSeconds", 1.2f, new ConfigDescription("How long a sold valuable takes to shrink away into the ward. 0 plays only the effects.", new AcceptableValueRange<float>(0f, 3f)));
+            AuraTradeDepartEffects = config("AuraTrade", "DepartEffects", "vfx_Potion_eitr_minor,sfx_OpenPortal", "Comma-separated vanilla effect prefabs played where the sold valuable appears in front of you.");
+            AuraTradeTravelEffect = config("AuraTrade", "TravelEffect", "vfx_pick_wisp", "One vanilla effect prefab flown with the sold valuable into the ward. Blank flies nothing.");
+            AuraTradeArriveEffects = config("AuraTrade", "ArriveEffects", "fx_summon_spirit_spawn,sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the ward as the valuable reaches it.");
+
             if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing) && Blacksmithing != null)
             {
                 BlacksmithingInstalled = true;
@@ -107,6 +116,15 @@ namespace OttoAura
                 int coins = AuraMoveCoins.Value;
                 string cost = coins > 0 ? $"for {coins} coins" : "for free";
                 return $"AuraMove: open the hammer's Merchant Guild tab or press {AuraMove.MoveTargeting.KeyLabel}, then click a chest or piece of furniture to have the Merchant Guild move it a short way {cost}.";
+            });
+            OttoPayBridge.RegisterAuraService("AuraTrade", () =>
+            {
+                if (AuraTradeEnabled.Value == Toggle.Off || !OttoPayBridge.CanDeposit)
+                {
+                    return "";
+                }
+                string keys = Localization.instance.Localize("$KEY_AltPlace + $KEY_Use");
+                return $"AuraTrade: at a ward you may use, use a valuable from your hotbar to sell that stack, or press {keys} to sell every valuable you carry. AuraPay keeps {AuraTradeFlatFee.Value} coins plus {AuraTradePercentFee.Value:0.##}% of each trade, so fewer, larger trades keep more.";
             });
         }
 
@@ -177,6 +195,7 @@ namespace OttoAura
         {
             OttoPayBridge.UnregisterAuraService("AuraBoost");
             OttoPayBridge.UnregisterAuraService("AuraMove");
+            OttoPayBridge.UnregisterAuraService("AuraTrade");
             AuraMoveController.Shutdown();
             AuraBoostEffect.Shutdown();
             Config.Save();
@@ -236,6 +255,14 @@ namespace OttoAura
         internal static ConfigEntry<string> AuraMoveArriveEffects = null!;
         internal static ConfigEntry<string> AuraMoveFinishEffects = null!;
         internal static ConfigEntry<KeyboardShortcut> AuraMoveKey = null!;
+        internal static ConfigEntry<Toggle> AuraTradeEnabled = null!;
+        internal static ConfigEntry<int> AuraTradeFlatFee = null!;
+        internal static ConfigEntry<float> AuraTradePercentFee = null!;
+        internal static ConfigEntry<string> AuraTradeDeniedItems = null!;
+        internal static ConfigEntry<float> AuraTradeShimmerSeconds = null!;
+        internal static ConfigEntry<string> AuraTradeDepartEffects = null!;
+        internal static ConfigEntry<string> AuraTradeTravelEffect = null!;
+        internal static ConfigEntry<string> AuraTradeArriveEffects = null!;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {

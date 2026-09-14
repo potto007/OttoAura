@@ -35,7 +35,7 @@ tint are all vanilla behaviour rather than a private ghost.
    object's own prefab and `Player.SetupPlacementGhost` builds a real ghost of it.
 4. **Aim.** `Player.UpdatePlacementGhost` drives everything from here: the ghost follows the ray,
    the mouse wheel and the gamepad rotate buttons turn it, and it goes red wherever the game would
-   refuse the placement. AuraMove adds one rule of its own in a postfix, **Max Move Distance** from
+   refuse the placement. AuraMove adds one rule of its own in a postfix, **MaxMoveDistance** from
    where the object stands now, which sets `m_placementStatus` to `Invalid` and tints the ghost.
 5. **Confirm.** Left click again. `Player.TryPlacePiece` is intercepted: nothing is instantiated,
    the fee is charged first, and on success the RPC goes out. A destination the game refuses gets
@@ -90,25 +90,31 @@ changes. That is how the panel names the live fee and what the Guild is holding.
 
 ## Configuration
 
-New section `5 - AuraMove`. Bound with the existing `config()` helper in `Plugin.Awake`, so every
+New section `AuraMove`. Bound with the existing `config()` helper in `Plugin.Awake`, so every
 entry is a ServerSync entry; the three input entries pass `synchronizedSetting: false` because a
 key binding belongs to the client, the same split OttoRedecorate uses.
+
+Section and key names are PascalCase, and the helper binds through `ConfigName.Section` and
+`ConfigName.Key` so they cannot drift. The section was `5 - AuraMove` and the keys carried spaces
+until 1.3.0; `ConfigNameMigration.Apply` rewrites an older player's file before the first bind.
+Both types are vendored from Ottomation_ModLib into `Config/`, because OttoAura does not inherit
+`OttoMod`. See Ottomation_ModLib ADR-0007 and ADR-0008.
 
 | Setting | Field | Type | Default | Range | Synced | Meaning |
 | --- | --- | --- | --- | --- | --- | --- |
 | Enabled | `AuraMoveEnabled` | Toggle | On | | yes | Turns the service off entirely. |
 | Coins | `AuraMoveCoins` | int | 5 | 0-1000 | yes | Coins charged per completed move. 0 makes moving free, but AuraPay must still be on. |
-| Max Move Distance | `AuraMoveMaxDistance` | float | 10 | 1-64 | yes | Metres the destination may sit from where the object stands now. |
-| Support Is Immovable | `AuraMoveSupportImmovable` | Toggle | On | | yes | Nothing that carries load can move, except furniture and crafting stations. |
-| Allowed Prefabs | `AuraMoveAllowedPrefabs` | string | `wood_fine_stack,blackwood_stack,bone_stack,piece_beehive` | | yes | Comma separated prefab names that skip every later rule. |
-| Denied Prefabs | `AuraMoveDeniedPrefabs` | string | `fire_pit,bonfire,hearth,windmill` | | yes | Comma separated prefab names that can never move. |
-| Shimmer Seconds | `AuraMoveShimmerSeconds` | float | 1.2 | 0-3 | yes | Length of the shrink and the grow together. 0 snaps and only plays the stage effects. |
-| Grab Effects | `AuraMoveGrabEffects` | string | `fx_summon_start,sfx_staffspiritcaller_cast` | | yes | Played for the grabbing client alone, at the source object's feet. |
-| Depart Effects | `AuraMoveDepartEffects` | string | `vfx_Potion_eitr_minor,sfx_OpenPortal` | | yes | Played on every client at the old spot as the object starts to shrink. |
-| Travel Effect | `AuraMoveTravelEffect` | string | `vfx_pick_wisp` | | yes | One prefab, flown along an arc from the old spot to the new one. Blank flies nothing. |
-| Arrive Effects | `AuraMoveArriveEffects` | string | `fx_summon_spirit_spawn,sfx_runestone_activate` | | yes | Played on every client at the new spot as the object grows back in. |
-| Finish Effects | `AuraMoveFinishEffects` | string | `sfx_dverger_heal_finish` | | yes | Played on every client at the new spot once the object is whole again. |
-| Move Key | `AuraMoveKey` | KeyboardShortcut | `M + LeftAlt` | | no | Takes the hammer out with Guild Move selected, and puts it away again. |
+| MaxMoveDistance | `AuraMoveMaxDistance` | float | 15 | 1-64 | yes | Metres the destination may sit from where the object stands now. |
+| SupportIsImmovable | `AuraMoveSupportImmovable` | Toggle | On | | yes | Nothing that carries load can move, except furniture and crafting stations. |
+| AllowedPrefabs | `AuraMoveAllowedPrefabs` | string | `wood_fine_stack,blackwood_stack,bone_stack,piece_beehive` | | yes | Comma separated prefab names that skip every later rule. |
+| DeniedPrefabs | `AuraMoveDeniedPrefabs` | string | `fire_pit,bonfire,hearth,windmill` | | yes | Comma separated prefab names that can never move. |
+| ShimmerSeconds | `AuraMoveShimmerSeconds` | float | 1.2 | 0-3 | yes | Length of the shrink and the grow together. 0 snaps and only plays the stage effects. |
+| GrabEffects | `AuraMoveGrabEffects` | string | `fx_summon_start,sfx_staffspiritcaller_cast` | | yes | Played for the grabbing client alone, at the source object's feet. |
+| DepartEffects | `AuraMoveDepartEffects` | string | `vfx_Potion_eitr_minor,sfx_OpenPortal` | | yes | Played on every client at the old spot as the object starts to shrink. |
+| TravelEffect | `AuraMoveTravelEffect` | string | `vfx_pick_wisp` | | yes | One prefab, flown along an arc from the old spot to the new one. Blank flies nothing. |
+| ArriveEffects | `AuraMoveArriveEffects` | string | `fx_summon_spirit_spawn,sfx_runestone_activate` | | yes | Played on every client at the new spot as the object grows back in. |
+| FinishEffects | `AuraMoveFinishEffects` | string | `sfx_dverger_heal_finish` | | yes | Played on every client at the new spot once the object is whole again. |
+| MoveKey | `AuraMoveKey` | KeyboardShortcut | `M + LeftAlt` | | no | Takes the hammer out with Guild Move selected, and puts it away again. |
 
 `Gamepad Modifier` and `Gamepad Button` were dropped in the hammer rework. The grab and the
 confirm are the build tool's own place button now, which is already bound on both devices, and the
@@ -152,7 +158,7 @@ can say why.
 14. `Aoe` in children with `m_useAttackSettings` and no `Fireplace` on the piece -> deny (stakes).
 15. `Container`: `!CheckAccess(localPlayer.GetPlayerID())` -> deny; `IsInUse()` or
     `m_open && m_open.activeSelf` -> deny (someone has it open).
-16. **Support Is Immovable** on, `m_category` neither `Furniture` nor `Crafting`, no `CraftingStation`
+16. **SupportIsImmovable** on, `m_category` neither `Furniture` nor `Crafting`, no `CraftingStation`
     or `StationExtension` component, `WearNTear.m_supports` -> deny. Crafting tables are always movable.
 17. Otherwise allow.
 
@@ -217,12 +223,12 @@ same summon the grab opened, and `sfx_runestone_activate` gives the arrival its 
 `sfx_dverger_heal_finish` is a short chime that says the work is done without another bang.
 
 **Shimmer.** A uniform `transform.localScale` tween: the object shrinks to near zero over the
-first half of **Shimmer Seconds**, the relocation is applied at the midpoint, and it grows back
+first half of **ShimmerSeconds**, the relocation is applied at the midpoint, and it grows back
 over the second half. Scale was chosen over an alpha fade deliberately. Valheim's piece shaders are
 opaque and there is no reliable `_Color` alpha to drive; a scale tween needs no shader assumptions,
 reverts exactly, and reads as a dematerialise. `localScale` is never serialised, so nothing about it
 can leak into the save. The default is 1.2 s, which is long enough for the departure, the crossing
-and the arrival to read as three separate beats. Shimmer Seconds 0 skips the tween and the travel
+and the arrival to read as three separate beats. ShimmerSeconds 0 skips the tween and the travel
 wisp, and fires Depart, Arrive and Finish on the same frame.
 
 **The piece's own place effect** still plays, as one more arrival effect at the new spot only. It is
@@ -411,7 +417,7 @@ any moment, exactly as `AuraBoostEffect.IsActive` does.
 | `PieceTable.UpdateAvailable` | postfix | Put the pseudo-piece and the Merchant Guild category back into the hammer table, or take them away when the service is off. |
 | `PieceTable.GetSelectedPrefab` | postfix | While carrying, hand vanilla the source object's prefab so it builds and drives the ghost. |
 | `Player.GetBuildSelection` | postfix | Put the pseudo-piece back for the build panel, so it names the Guild's fee and not the carried object's build cost. |
-| `Player.UpdatePlacementGhost` | postfix | Apply Max Move Distance as one more invalid condition, on top of every vanilla rule. |
+| `Player.UpdatePlacementGhost` | postfix | Apply MaxMoveDistance as one more invalid condition, on top of every vanilla rule. |
 | `Player.TryPlacePiece` | prefix | The left click: take hold, or charge and send the move. Never builds anything. |
 | `Player.PlacePiece` | prefix | Belt and braces: the pseudo-piece can never be instantiated. |
 | `Player.RemovePiece` | prefix | While carrying, right click means "let go" rather than the hammer's remove. |

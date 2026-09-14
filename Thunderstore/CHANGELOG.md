@@ -2,11 +2,10 @@
 
 ## 1.4.0
 
-- AuraTrade. The Merchant Guild buys valuables at any ward you may use. Use a valuable from your hotbar on the ward to sell that stack, or press `LeftShift + E` on the ward to sell every valuable you carry. Coins are never bought.
-- The coins go to your Merchant Bank balance, less the AuraPay network's fee for the magic: a flat charge per trade plus a percent of what the trade is worth, 5 coins plus 3% by default. The flat charge is paid once per trade, so one big sale keeps more than several small ones. A trade the fee would swallow whole is refused and nothing is taken.
-- A sold valuable leaves the way AuraMove objects do: it appears in front of you, shrinks away as a wisp carries it into the ward, and the ward answers with a spirit summon. The effects are yours alone.
-- Every valuable's tooltip shows what AuraTrade would pay for one and for the whole stack: gross worth, the fee, and the net.
-- The ward's hover text shows what selling everything you carry would pay.
+- AuraTrade. The Merchant Guild buys valuables. Stand inside a ward you may use, with AuraPay on, and the Merchant Bank balance in your inventory turns into a deposit arrow when you pick up a valuable. Drop a valuable, a stack or a split on it to sell. Coins are never bought.
+- The coins go to your Merchant Bank balance, less the AuraPay network's fee for the magic: a flat charge per sale plus a percent of what the sale is worth, 5 coins plus 3% by default. The flat charge is paid once per sale, so one big sale keeps more than several small ones. A sale the fee would swallow whole is refused and nothing is taken.
+- A sold valuable leaves the way AuraMove objects do: it appears in front of the seller, shrinks away as a wisp carries it into the ward, and the ward answers with a spirit summon. Every nearby player with OttoAura sees it.
+- Every valuable's tooltip shows what AuraTrade would pay for one and for the whole stack: gross worth, the fee, and the net. The deposit arrow's tooltip shows the same for what you are holding.
 - New server-synced settings under `AuraTrade`: `Enabled`, `FlatFee`, `PercentFee`, `DeniedItems`, `ShimmerSeconds`, `DepartEffects`, `TravelEffect` and `ArriveEffects`.
 - AuraTrade needs OttoPay 1.6.0. With an older OttoPay it stays off and everything else works as before.
 

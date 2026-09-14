@@ -83,14 +83,14 @@ namespace OttoAura
             AuraMoveFinishEffects = config("AuraMove", "FinishEffects", "sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the new spot once the object is whole again.");
             AuraMoveKey = config("AuraMove", "MoveKey", new KeyboardShortcut(KeyCode.M, KeyCode.LeftAlt), "Keyboard shortcut that takes the hammer out and selects Guild Move, and puts it away again.", false);
 
-            AuraTradeEnabled = config("AuraTrade", "Enabled", Toggle.On, "If on, Merchant Bank members with AuraPay on can sell valuables to the Merchant Guild at a ward they may use. Needs OttoPay 1.6.0.");
+            AuraTradeEnabled = config("AuraTrade", "Enabled", Toggle.On, "If on, Merchant Bank members with AuraPay on can sell valuables to the Merchant Guild by dropping them on the Merchant Bank balance while inside a ward they may use. Needs OttoPay 1.6.0.");
             AuraTradeFlatFee = config("AuraTrade", "FlatFee", 5, new ConfigDescription("Coins the AuraPay network keeps from every trade, however large. Charged once per trade, so one big trade keeps more coins than several small ones.", new AcceptableValueRange<int>(0, 1000)));
             AuraTradePercentFee = config("AuraTrade", "PercentFee", 3f, new ConfigDescription("Percent of a trade's gross worth the AuraPay network keeps on top of FlatFee, rounded up to whole coins.", new AcceptableValueRange<float>(0f, 50f)));
             AuraTradeDeniedItems = config("AuraTrade", "DeniedItems", "", "Comma-separated item prefab names the Merchant Guild will not buy, for example Ruby,AmberPearl. Coins are never bought.");
             AuraTradeShimmerSeconds = config("AuraTrade", "ShimmerSeconds", 1.2f, new ConfigDescription("How long a sold valuable takes to shrink away into the ward. 0 plays only the effects.", new AcceptableValueRange<float>(0f, 3f)));
-            AuraTradeDepartEffects = config("AuraTrade", "DepartEffects", "vfx_Potion_eitr_minor,sfx_OpenPortal", "Comma-separated vanilla effect prefabs played where the sold valuable appears in front of you.");
+            AuraTradeDepartEffects = config("AuraTrade", "DepartEffects", "vfx_Potion_eitr_minor,sfx_OpenPortal", "Comma-separated vanilla effect prefabs played where the sold valuable appears in front of the seller. Every player nearby sees the sale.");
             AuraTradeTravelEffect = config("AuraTrade", "TravelEffect", "vfx_pick_wisp", "One vanilla effect prefab flown with the sold valuable into the ward. Blank flies nothing.");
-            AuraTradeArriveEffects = config("AuraTrade", "ArriveEffects", "fx_summon_spirit_spawn,sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the ward as the valuable reaches it.");
+            AuraTradeArriveEffects = config("AuraTrade", "ArriveEffects", "fx_summon_spirit_spawn,sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the ward as the sold valuable reaches it.");
 
             if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing) && Blacksmithing != null)
             {
@@ -123,9 +123,9 @@ namespace OttoAura
                 {
                     return "";
                 }
-                string keys = Localization.instance.Localize("$KEY_AltPlace + $KEY_Use");
-                return $"AuraTrade: at a ward you may use, use a valuable from your hotbar to sell that stack, or press {keys} to sell every valuable you carry. AuraPay keeps {AuraTradeFlatFee.Value} coins plus {AuraTradePercentFee.Value:0.##}% of each trade, so fewer, larger trades keep more.";
+                return $"AuraTrade: inside a ward you may use, drop a valuable on your Merchant Bank balance to sell it. AuraPay keeps {AuraTradeFlatFee.Value} coins plus {AuraTradePercentFee.Value:0.##}% of each sale, so fewer, larger sales keep more.";
             });
+            AuraTrade.AuraTradeController.Register();
         }
 
         public void Start()
@@ -196,6 +196,7 @@ namespace OttoAura
             OttoPayBridge.UnregisterAuraService("AuraBoost");
             OttoPayBridge.UnregisterAuraService("AuraMove");
             OttoPayBridge.UnregisterAuraService("AuraTrade");
+            AuraTrade.AuraTradeController.Unregister();
             AuraMoveController.Shutdown();
             AuraBoostEffect.Shutdown();
             Config.Save();

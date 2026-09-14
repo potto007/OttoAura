@@ -39,6 +39,16 @@ The move is a small conjuring. A summoning ring lights up at the object's feet t
 
 Some things cannot be moved. The Guild will not touch vehicles, live wards, armed traps or active shield generators. Building pieces such as walls, floors and beams stay where they are, but every crafting station, from the workbench to the forge and the cauldron, can be moved. Plants are rooted. Any chest that another player has open is off limits. By default, other pieces that carry structural load are immovable too, so the building itself cannot shift; you can turn that rule off with the SupportIsImmovable setting. The AllowedPrefabs and DeniedPrefabs lists let you grant or block particular objects by prefab name regardless of the other rules.
 
+## AuraTrade
+
+The Merchant Guild buys valuables, anything with a coin value except coins themselves, at any ward that is switched on and lists you as creator or permitted. You need AuraPay on in OttoPay, and OttoPay 1.6.0 or newer.
+
+Stand at the ward and look at it. To sell one stack, use that valuable from your hotbar, the same way you would feed a fire. To sell everything at once, press `LeftShift + E` on the ward (AltPlace and Use, if you have rebound them); the ward's hover text tells you what that would pay before you press it. Plain `E` still switches the ward on and off.
+
+The AuraPay network takes a fee for the magic, the way a card processor does: a flat FlatFee per trade plus PercentFee of what the trade is worth, rounded up. With the defaults of 5 coins and 3%, a valuable worth 20 sold on its own pays 6 in fees and puts 14 in your balance, while twelve of them sold together are worth 240, pay 13 and put 227 in your balance. The flat part is charged once however much you sell, so fewer, larger trades keep more. Every valuable's tooltip shows the gross worth, the fee and the net, for one item and for the whole stack. A trade the fee would take entirely is refused, and nothing leaves your inventory.
+
+The valuables leave your inventory before the coins are credited, and if the Merchant Bank refuses the deposit they come straight back. A sold valuable disappears the way AuraMove objects do: it appears in front of you, shrinks away as a wisp carries it into the ward, and the ward answers with a spirit summon. Only you see it. DeniedItems lists item prefab names the Guild will not buy.
+
 ## Client and server
 
 OttoAura is a client mod, so it works on a server that does not have it.
@@ -77,10 +87,18 @@ Section and setting names lost their spaces and their leading numbers in 1.3.0, 
 | AuraMove: ArriveEffects | fx_summon_spirit_spawn,... | | Comma-separated vanilla effect prefabs played at the new spot as the object grows back in, alongside the piece's own place effect. |
 | AuraMove: FinishEffects | sfx_dverger_heal_finish | | Comma-separated vanilla effect prefabs played at the new spot once the object is whole again. |
 | AuraMove: MoveKey | M + LeftAlt | | Takes the hammer out with Guild Move selected, and puts it away again. Not synced - set per client. |
+| AuraTrade: Enabled | On | | Turn the Guild's valuables trade off entirely. |
+| AuraTrade: FlatFee | 5 | 0 to 1000 | Coins the AuraPay network keeps from every trade, however large. |
+| AuraTrade: PercentFee | 3 | 0 to 50 | Percent of a trade's gross worth kept on top of FlatFee, rounded up to whole coins. |
+| AuraTrade: DeniedItems | | | Comma-separated item prefab names the Guild will not buy, for example Ruby,AmberPearl. |
+| AuraTrade: ShimmerSeconds | 1.2 | 0 to 3 | How long a sold valuable takes to shrink away into the ward. 0 plays only the effects. |
+| AuraTrade: DepartEffects | vfx_Potion_eitr_minor,... | | Comma-separated vanilla effect prefabs played where the sold valuable appears in front of you. |
+| AuraTrade: TravelEffect | vfx_pick_wisp | | One vanilla effect prefab flown with the sold valuable into the ward. Blank flies nothing. |
+| AuraTrade: ArriveEffects | fx_summon_spirit_spawn,... | | Comma-separated vanilla effect prefabs played at the ward as the valuable reaches it. |
 
 ## Other mods
 
-- OttoPay 1.5.0 is required, and OttoAura does not load without it. Paid repairs and AuraBoost both work through AuraPay.
+- OttoPay 1.5.0 is required, and OttoAura does not load without it. Paid repairs and AuraBoost both work through AuraPay. AuraTrade needs OttoPay 1.6.0 and stays off with anything older.
 - AuraBoost does not stack with run stamina discounts that other mods add through their own status effects. When one is active, the bigger discount wins. Food, meads, Moder's power and item mods built on the game's own status effect types still stack with AuraBoost as usual.- Blacksmithing changes what happens after a repair. When an item reaches full durability, it stops losing durability for a while, and that time is 10 minutes times the player's Blacksmithing skill factor once the factor reaches 0.5. The item data keys are the same ones RepairStation used, so gear repaired by RepairStation keeps its time.
 
 ## Credits

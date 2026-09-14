@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.4.0
+
+- AuraTrade. The Merchant Guild buys valuables at any ward you may use. Use a valuable from your hotbar on the ward to sell that stack, or press `LeftShift + E` on the ward to sell every valuable you carry. Coins are never bought.
+- The coins go to your Merchant Bank balance, less the AuraPay network's fee for the magic: a flat charge per trade plus a percent of what the trade is worth, 5 coins plus 3% by default. The flat charge is paid once per trade, so one big sale keeps more than several small ones. A trade the fee would swallow whole is refused and nothing is taken.
+- A sold valuable leaves the way AuraMove objects do: it appears in front of you, shrinks away as a wisp carries it into the ward, and the ward answers with a spirit summon. The effects are yours alone.
+- Every valuable's tooltip shows what AuraTrade would pay for one and for the whole stack: gross worth, the fee, and the net.
+- The ward's hover text shows what selling everything you carry would pay.
+- New server-synced settings under `AuraTrade`: `Enabled`, `FlatFee`, `PercentFee`, `DeniedItems`, `ShimmerSeconds`, `DepartEffects`, `TravelEffect` and `ArriveEffects`.
+- AuraTrade needs OttoPay 1.6.0. With an older OttoPay it stays off and everything else works as before.
+
 ## 1.3.0
 
 - Changing a synced setting on a server no longer throws, and clients now receive the new value. The bundled ServerSync read `ZRoutedRpc.Everybody` as a field, and Valheim 1.0.12 made it a constant, so every broadcast died before it left the server.

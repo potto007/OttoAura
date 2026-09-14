@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0
+
+- Changing a synced setting on a server no longer throws, and clients now receive the new value. The bundled ServerSync read `ZRoutedRpc.Everybody` as a field, and Valheim 1.0.12 made it a constant, so every broadcast died before it left the server.
+- Config sections and settings are PascalCase: `5 - AuraMove` is now `AuraMove`, and `Max Move Distance` is now `MaxMoveDistance`. An older config file is renamed in place the first time 1.3.0 loads and keeps the values you chose. Settings the mod no longer defines are left alone.
+- `MaxMoveDistance` now defaults to 15 metres instead of 10.
+
 ## 1.2.1
 
 - Every crafting station can be moved, from the workbench to the forge, the cauldron and their extensions. Building pieces such as walls, floors and beams still stay put.

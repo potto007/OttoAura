@@ -1,6 +1,6 @@
 {
   "name": "OttoAura",
-  "version_number": "1.2.1",
+  "version_number": "1.3.0",
   "website_url": "https://github.com/potto007/OttoAura",
   "description": "Your ward heals you and repairs your worn gear while you stand inside it. The Merchant Guild also moves placed objects a short distance for a small fee. Free, or paid from your OttoPay balance.",
   "dependencies": [

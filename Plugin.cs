@@ -11,6 +11,7 @@ using HarmonyLib;
 using JetBrains.Annotations;
 using OttoAura.AuraBoost;
 using OttoAura.AuraMove;
+using OttoAura.Config;
 using ServerSync;
 using UnityEngine;
 
@@ -23,7 +24,7 @@ namespace OttoAura
     public class OttoAuraPlugin : BaseUnityPlugin
     {
         internal const string ModName = "OttoAura";
-        internal const string ModVersion = "1.2.1";
+        internal const string ModVersion = "1.3.0";
         internal const string Author = "potto007";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
@@ -48,34 +49,39 @@ namespace OttoAura
         public void Awake()
         {
             context = this;
-            _serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
+            // Section headers and keys in an existing file carry the old spaced spelling, so
+            // they are rewritten to the PascalCase names the binds below ask for. Before the
+            // first bind, or the player's values are stranded in dead lines. See the vendored
+            // Config/ConfigNameMigration.cs and Ottomation_ModLib ADR-0007 and ADR-0008.
+            ConfigNameMigration.Apply(Config, OttoAuraLogger);
+            _serverConfigLocked = config("General", "LockConfiguration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
             _ = ConfigSync.AddLockingConfigEntry(_serverConfigLocked);
 
-            HealPerSecond = config("2 - Aura", "Heal Per Second", 1f, new ConfigDescription("Health restored each second to a permitted player inside an active ward. 0 turns healing off.", new AcceptableValueRange<float>(0f, 50f)));
-            RepairPercentPerTick = config("2 - Aura", "Repair Percent Per Tick", 5f, new ConfigDescription("Percent of an item's maximum durability restored each tick, for worn gear carried by a permitted player inside an active ward. 0 turns repair off.", new AcceptableValueRange<float>(0f, 100f)));
-            CoinsPerItemTick = config("2 - Aura", "Coins Per Item Tick", 1, new ConfigDescription("Coins charged to the OttoPay Merchant Bank balance for each item repaired in a tick. The player must turn AuraPay on in OttoPay. 0 makes repair free.", new AcceptableValueRange<int>(0, 1000)));
-            TickSeconds = config("2 - Aura", "Tick Seconds", 1f, new ConfigDescription("Seconds between aura ticks.", new AcceptableValueRange<float>(0.25f, 30f)));
-            ShowHealText = config("2 - Aura", "Show Heal Text", Toggle.Off, "If on, each heal tick shows a floating heal number.", false);
-            PreventCraftingStationRepair = config("3 - Crafting Stations", "Prevent Crafting Station Repair", Toggle.Off, "If on, players cannot repair items at crafting stations and must use a ward aura.");
-            AuraBoostEnabled = config("4 - AuraBoost", "Enabled", Toggle.On, "If on, Merchant Bank members with AuraPay on in OttoPay drain less stamina while running on roads and trails.");
-            AuraBoostStaminaTrail = config("4 - AuraBoost", "Stamina Usage Trail", 0.5f, new ConfigDescription("Run stamina drain on dirt paths, wood and metal, as a fraction of vanilla. 1 is vanilla, 0 is no drain.", new AcceptableValueRange<float>(0f, 1f)));
-            AuraBoostStaminaRoad = config("4 - AuraBoost", "Stamina Usage Road", 0f, new ConfigDescription("Run stamina drain on paved roads and stone, as a fraction of vanilla. 1 is vanilla, 0 is no drain.", new AcceptableValueRange<float>(0f, 1f)));
-            AuraBoostShowStatusIcon = config("4 - AuraBoost", "Show Status Icon", Toggle.On, "If on, the AuraBoost icon shows in the status bar while the effect is active.");
+            HealPerSecond = config("Aura", "HealPerSecond", 1f, new ConfigDescription("Health restored each second to a permitted player inside an active ward. 0 turns healing off.", new AcceptableValueRange<float>(0f, 50f)));
+            RepairPercentPerTick = config("Aura", "RepairPercentPerTick", 5f, new ConfigDescription("Percent of an item's maximum durability restored each tick, for worn gear carried by a permitted player inside an active ward. 0 turns repair off.", new AcceptableValueRange<float>(0f, 100f)));
+            CoinsPerItemTick = config("Aura", "CoinsPerItemTick", 1, new ConfigDescription("Coins charged to the OttoPay Merchant Bank balance for each item repaired in a tick. The player must turn AuraPay on in OttoPay. 0 makes repair free.", new AcceptableValueRange<int>(0, 1000)));
+            TickSeconds = config("Aura", "TickSeconds", 1f, new ConfigDescription("Seconds between aura ticks.", new AcceptableValueRange<float>(0.25f, 30f)));
+            ShowHealText = config("Aura", "ShowHealText", Toggle.Off, "If on, each heal tick shows a floating heal number.", false);
+            PreventCraftingStationRepair = config("CraftingStations", "PreventCraftingStationRepair", Toggle.Off, "If on, players cannot repair items at crafting stations and must use a ward aura.");
+            AuraBoostEnabled = config("AuraBoost", "Enabled", Toggle.On, "If on, Merchant Bank members with AuraPay on in OttoPay drain less stamina while running on roads and trails.");
+            AuraBoostStaminaTrail = config("AuraBoost", "StaminaUsageTrail", 0.5f, new ConfigDescription("Run stamina drain on dirt paths, wood and metal, as a fraction of vanilla. 1 is vanilla, 0 is no drain.", new AcceptableValueRange<float>(0f, 1f)));
+            AuraBoostStaminaRoad = config("AuraBoost", "StaminaUsageRoad", 0f, new ConfigDescription("Run stamina drain on paved roads and stone, as a fraction of vanilla. 1 is vanilla, 0 is no drain.", new AcceptableValueRange<float>(0f, 1f)));
+            AuraBoostShowStatusIcon = config("AuraBoost", "ShowStatusIcon", Toggle.On, "If on, the AuraBoost icon shows in the status bar while the effect is active.");
             AuraBoostSprite = LoadSprite("auraboost_icon.png");
 
-            AuraMoveEnabled = config("5 - AuraMove", "Enabled", Toggle.On, "If on, the Merchant Guild will move placed objects for a fee while AuraPay is active.");
-            AuraMoveCoins = config("5 - AuraMove", "Coins", 5, new ConfigDescription("Coins charged to the Merchant Bank balance per completed move. 0 makes moving free, but AuraPay must still be on.", new AcceptableValueRange<int>(0, 1000)));
-            AuraMoveMaxDistance = config("5 - AuraMove", "Max Move Distance", 10f, new ConfigDescription("How far in metres the destination may sit from where the object stands now.", new AcceptableValueRange<float>(1f, 64f)));
-            AuraMoveSupportImmovable = config("5 - AuraMove", "Support Is Immovable", Toggle.On, "If on, non-furniture pieces that carry structural load cannot be moved.");
-            AuraMoveAllowedPrefabs = config("5 - AuraMove", "Allowed Prefabs", "wood_fine_stack,blackwood_stack,bone_stack,piece_beehive", "Comma-separated prefab names that skip every eligibility restriction and can always be moved.");
-            AuraMoveDeniedPrefabs = config("5 - AuraMove", "Denied Prefabs", "fire_pit,bonfire,hearth,windmill", "Comma-separated prefab names that can never be moved.");
-            AuraMoveShimmerSeconds = config("5 - AuraMove", "Shimmer Seconds", 1.2f, new ConfigDescription("Total duration of the shrink and grow animation. 0 snaps and only plays the stage effects.", new AcceptableValueRange<float>(0f, 3f)));
-            AuraMoveGrabEffects = config("5 - AuraMove", "Grab Effects", "fx_summon_start,sfx_staffspiritcaller_cast", "Comma-separated vanilla effect prefabs played for you alone when the Guild takes hold of an object.");
-            AuraMoveDepartEffects = config("5 - AuraMove", "Depart Effects", "vfx_Potion_eitr_minor,sfx_OpenPortal", "Comma-separated vanilla effect prefabs played at the old spot as the object leaves it.");
-            AuraMoveTravelEffect = config("5 - AuraMove", "Travel Effect", "vfx_pick_wisp", "One vanilla effect prefab flown along an arc from the old spot to the new one during the shimmer. Blank flies nothing.");
-            AuraMoveArriveEffects = config("5 - AuraMove", "Arrive Effects", "fx_summon_spirit_spawn,sfx_runestone_activate", "Comma-separated vanilla effect prefabs played at the new spot as the object grows back in, alongside the piece's own place effect.");
-            AuraMoveFinishEffects = config("5 - AuraMove", "Finish Effects", "sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the new spot once the object is whole again.");
-            AuraMoveKey = config("5 - AuraMove", "Move Key", new KeyboardShortcut(KeyCode.M, KeyCode.LeftAlt), "Keyboard shortcut that takes the hammer out and selects Guild Move, and puts it away again.", false);
+            AuraMoveEnabled = config("AuraMove", "Enabled", Toggle.On, "If on, the Merchant Guild will move placed objects for a fee while AuraPay is active.");
+            AuraMoveCoins = config("AuraMove", "Coins", 5, new ConfigDescription("Coins charged to the Merchant Bank balance per completed move. 0 makes moving free, but AuraPay must still be on.", new AcceptableValueRange<int>(0, 1000)));
+            AuraMoveMaxDistance = config("AuraMove", "MaxMoveDistance", 15f, new ConfigDescription("How far in metres the destination may sit from where the object stands now.", new AcceptableValueRange<float>(1f, 64f)));
+            AuraMoveSupportImmovable = config("AuraMove", "SupportIsImmovable", Toggle.On, "If on, non-furniture pieces that carry structural load cannot be moved.");
+            AuraMoveAllowedPrefabs = config("AuraMove", "AllowedPrefabs", "wood_fine_stack,blackwood_stack,bone_stack,piece_beehive", "Comma-separated prefab names that skip every eligibility restriction and can always be moved.");
+            AuraMoveDeniedPrefabs = config("AuraMove", "DeniedPrefabs", "fire_pit,bonfire,hearth,windmill", "Comma-separated prefab names that can never be moved.");
+            AuraMoveShimmerSeconds = config("AuraMove", "ShimmerSeconds", 1.2f, new ConfigDescription("Total duration of the shrink and grow animation. 0 snaps and only plays the stage effects.", new AcceptableValueRange<float>(0f, 3f)));
+            AuraMoveGrabEffects = config("AuraMove", "GrabEffects", "fx_summon_start,sfx_staffspiritcaller_cast", "Comma-separated vanilla effect prefabs played for you alone when the Guild takes hold of an object.");
+            AuraMoveDepartEffects = config("AuraMove", "DepartEffects", "vfx_Potion_eitr_minor,sfx_OpenPortal", "Comma-separated vanilla effect prefabs played at the old spot as the object leaves it.");
+            AuraMoveTravelEffect = config("AuraMove", "TravelEffect", "vfx_pick_wisp", "One vanilla effect prefab flown along an arc from the old spot to the new one during the shimmer. Blank flies nothing.");
+            AuraMoveArriveEffects = config("AuraMove", "ArriveEffects", "fx_summon_spirit_spawn,sfx_runestone_activate", "Comma-separated vanilla effect prefabs played at the new spot as the object grows back in, alongside the piece's own place effect.");
+            AuraMoveFinishEffects = config("AuraMove", "FinishEffects", "sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the new spot once the object is whole again.");
+            AuraMoveKey = config("AuraMove", "MoveKey", new KeyboardShortcut(KeyCode.M, KeyCode.LeftAlt), "Keyboard shortcut that takes the hammer out and selects Guild Move, and puts it away again.", false);
 
             if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing) && Blacksmithing != null)
             {
@@ -234,7 +240,9 @@ namespace OttoAura
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {
             ConfigDescription extendedDescription = new(description.Description + (synchronizedSetting ? " [Synced with Server]" : " [Not Synced with Server]"), description.AcceptableValues, description.Tags);
-            ConfigEntry<T> configEntry = Config.Bind(group, name, value, extendedDescription);
+            // Bound through ConfigName so a name written with spaces here still lands on the
+            // PascalCase spelling the migration rewrites a player's file to.
+            ConfigEntry<T> configEntry = Config.Bind(ConfigName.Section(group), ConfigName.Key(name), value, extendedDescription);
             //var configEntry = Config.Bind(group, name, value, description);
 
             SyncedConfigEntry<T> syncedConfigEntry = ConfigSync.AddConfigEntry(configEntry);

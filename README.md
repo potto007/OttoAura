@@ -41,13 +41,13 @@ Some things cannot be moved. The Guild will not touch vehicles, live wards, arme
 
 ## AuraTrade
 
-The Merchant Guild buys valuables, anything with a coin value except coins themselves, at any ward that is switched on and lists you as creator or permitted. You need AuraPay on in OttoPay, and OttoPay 1.6.0 or newer.
+The Merchant Guild buys valuables, anything with a coin value except coins themselves. You need AuraPay on in OttoPay, OttoPay 1.6.0 or newer, and you have to stand inside a ward that is switched on and lists you as creator or permitted, the same ward whose aura heals you.
 
-Stand at the ward and look at it. To sell one stack, use that valuable from your hotbar, the same way you would feed a fire. To sell everything at once, press `LeftShift + E` on the ward (AltPlace and Use, if you have rebound them); the ward's hover text tells you what that would pay before you press it. Plain `E` still switches the ward on and off.
+Open your inventory and pick up a valuable, a whole stack, or part of one after splitting it. While you are in such a ward, the Merchant Bank balance icon turns into a deposit arrow, and its tooltip shows what the sale would pay. Drop the valuables on the arrow to sell them. Outside a ward, or with AuraPay off, the arrow does not appear for valuables and nothing can be sold.
 
-The AuraPay network takes a fee for the magic, the way a card processor does: a flat FlatFee per trade plus PercentFee of what the trade is worth, rounded up. With the defaults of 5 coins and 3%, a valuable worth 20 sold on its own pays 6 in fees and puts 14 in your balance, while twelve of them sold together are worth 240, pay 13 and put 227 in your balance. The flat part is charged once however much you sell, so fewer, larger trades keep more. Every valuable's tooltip shows the gross worth, the fee and the net, for one item and for the whole stack. A trade the fee would take entirely is refused, and nothing leaves your inventory.
+The AuraPay network takes a fee for the magic, the way a card processor does: a flat FlatFee per sale plus PercentFee of what the sale is worth, rounded up. With the defaults of 5 coins and 3%, a valuable worth 20 sold on its own pays 6 in fees and puts 14 in your balance, while twelve of them sold together are worth 240, pay 13 and put 227 in your balance. The flat part is charged once however much you sell, so fewer, larger sales keep more. Every valuable's tooltip shows the gross worth, the fee and the net, for one item and for the whole stack. A sale the fee would take entirely is refused, and nothing leaves your inventory.
 
-The valuables leave your inventory before the coins are credited, and if the Merchant Bank refuses the deposit they come straight back. A sold valuable disappears the way AuraMove objects do: it appears in front of you, shrinks away as a wisp carries it into the ward, and the ward answers with a spirit summon. Only you see it. DeniedItems lists item prefab names the Guild will not buy.
+The valuables leave your inventory before the coins are credited, and if the Merchant Bank refuses the deposit they come straight back. A sold valuable disappears the way AuraMove objects do: it appears in front of you, shrinks away as a wisp carries it into the ward, and the ward answers with a spirit summon. Other players nearby who have OttoAura see it too. DeniedItems lists item prefab names the Guild will not buy.
 
 ## Client and server
 
@@ -92,7 +92,7 @@ Section and setting names lost their spaces and their leading numbers in 1.3.0, 
 | AuraTrade: PercentFee | 3 | 0 to 50 | Percent of a trade's gross worth kept on top of FlatFee, rounded up to whole coins. |
 | AuraTrade: DeniedItems | | | Comma-separated item prefab names the Guild will not buy, for example Ruby,AmberPearl. |
 | AuraTrade: ShimmerSeconds | 1.2 | 0 to 3 | How long a sold valuable takes to shrink away into the ward. 0 plays only the effects. |
-| AuraTrade: DepartEffects | vfx_Potion_eitr_minor,... | | Comma-separated vanilla effect prefabs played where the sold valuable appears in front of you. |
+| AuraTrade: DepartEffects | vfx_Potion_eitr_minor,... | | Comma-separated vanilla effect prefabs played where the sold valuable appears in front of the seller. |
 | AuraTrade: TravelEffect | vfx_pick_wisp | | One vanilla effect prefab flown with the sold valuable into the ward. Blank flies nothing. |
 | AuraTrade: ArriveEffects | fx_summon_spirit_spawn,... | | Comma-separated vanilla effect prefabs played at the ward as the valuable reaches it. |
 

@@ -14,6 +14,8 @@ internal static class OttoPayBridge
     private static MethodInfo? _registerAuraService;
     private static MethodInfo? _unregisterAuraService;
     private static MethodInfo? _tryDeposit;
+    private static MethodInfo? _registerDepositHandler;
+    private static MethodInfo? _unregisterDepositHandler;
 
     internal static bool IsAuraPayEnabled()
     {
@@ -28,15 +30,40 @@ internal static class OttoPayBridge
         return _tryWithdraw != null && (bool)_tryWithdraw.Invoke(null, new object[] { amount });
     }
 
-    // True once OttoPay's deposit API is there. It arrived in OttoPay 1.6.0; without it AuraTrade
-    // stays dormant and nothing else changes.
+    // True once OttoPay's deposit API and deposit handler hook are both there. They arrived in
+    // OttoPay 1.6.0; without them AuraTrade stays dormant and nothing else changes.
     internal static bool CanDeposit
     {
         get
         {
             Bind();
-            return _tryDeposit != null;
+            return _tryDeposit != null && _registerDepositHandler != null;
         }
+    }
+
+    // Offers OttoPay's balance icon an item it does not take itself. OttoPay shows its deposit
+    // arrow while canDeposit answers true for the dragged item, titles the arrow's tooltip with
+    // name over describe's text, and calls deposit when the item is dropped there. deposit owns
+    // the whole sale, removal and credit both, and answers true only when both happened. Every
+    // callback receives the drag's inventory, item and amount. No-op without OttoPay 1.6.0.
+    internal static void RegisterDepositHandler(
+        string name,
+        Func<Inventory, ItemDrop.ItemData, int, bool> canDeposit,
+        Func<Inventory, ItemDrop.ItemData, int, bool> deposit,
+        Func<Inventory, ItemDrop.ItemData, int, string> describe)
+    {
+        Bind();
+        if (!CanDeposit)
+        {
+            return;
+        }
+        _registerDepositHandler!.Invoke(null, new object[] { name, canDeposit, deposit, describe });
+    }
+
+    internal static void UnregisterDepositHandler(string name)
+    {
+        Bind();
+        _unregisterDepositHandler?.Invoke(null, new object[] { name });
     }
 
     // Credits the whole amount or nothing: false for a non-member, a negative amount, or a balance
@@ -91,12 +118,17 @@ internal static class OttoPayBridge
             OttoAuraPlugin.OttoAuraLogger.LogWarning("OttoPay's RegisterAuraService API was not found. The AuraPay tooltip will not list OttoAura's services.");
         }
 
-        // Deposit API is optional too: added in OttoPay 1.6.0 for AuraTrade. Missing it only keeps
-        // AuraTrade dormant.
+        // The deposit API is optional too: added in OttoPay 1.6.0 for AuraTrade. Missing any part of
+        // it only keeps AuraTrade dormant.
         _tryDeposit = api == null ? null : AccessTools.Method(api, "TryDeposit", new[] { typeof(int) });
-        if (_tryDeposit == null)
+        _registerDepositHandler = api == null ? null : AccessTools.Method(api, "RegisterDepositHandler");
+        _unregisterDepositHandler = api == null ? null : AccessTools.Method(api, "UnregisterDepositHandler");
+        if (_tryDeposit == null || _registerDepositHandler == null || _unregisterDepositHandler == null)
         {
-            OttoAuraPlugin.OttoAuraLogger.LogWarning("OttoPay's TryDeposit API was not found. AuraTrade stays off until OttoPay 1.6.0 is installed.");
+            _tryDeposit = null;
+            _registerDepositHandler = null;
+            _unregisterDepositHandler = null;
+            OttoAuraPlugin.OttoAuraLogger.LogWarning("OttoPay's deposit API was not found. AuraTrade stays off until OttoPay 1.6.0 is installed.");
         }
     }
 }

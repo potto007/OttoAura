@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1
+
+- Rebuilt against Valheim 1.0.14. Every Harmony patch target still resolves in this build, and nothing else changed.
+
 ## 1.4.0
 
 - AuraTrade. The Merchant Guild buys valuables. Stand inside a ward you may use, with AuraPay on, and the Merchant Bank balance in your inventory turns into a deposit arrow when you pick up a valuable. Drop a valuable, a stack or a split on it to sell. `LeftShift + E` on the ward sells every valuable you carry at once. Coins are never bought.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.4
+
+- The README now states the mod version and the Valheim version it was built against. The code is unchanged from 1.4.3, which was rebuilt against Valheim 1.0.16.
+
 ## 1.4.3
 
 - Rebuilt against Valheim 1.0.16. Every Harmony patch target still resolves in this build, and nothing else changed.

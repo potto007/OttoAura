@@ -1,0 +1,64 @@
+namespace OttoAura.Tests;
+
+public class DurabilityHoldTests
+{
+    private static readonly DateTime Now = new(2026, 10, 5, 14, 0, 0);
+
+    [Theory]
+    [InlineData(0f, 0)]
+    [InlineData(0.49f, 0)]
+    [InlineData(0.5f, 5)]
+    [InlineData(1f, 10)]
+    public void Hold_lasts_ten_minutes_times_the_skill_factor_from_half_skill(float skillFactor, int minutes)
+    {
+        Assert.Equal(minutes, DurabilityHold.MinutesFor(skillFactor));
+    }
+
+    [Fact]
+    public void Holds_until_the_deadline()
+    {
+        ItemDrop.ItemData sword = Items.Gear("$item_sword", 100f);
+        DurabilityHold.Start(sword, 1f, Now);
+
+        DurabilityHold.State state = DurabilityHold.Refresh(sword, Now.AddMinutes(9));
+
+        Assert.Equal(DurabilityHold.State.Holding, state);
+        Assert.False(sword.m_shared.m_useDurability);
+    }
+
+    [Fact]
+    public void Gives_durability_back_and_clears_the_keys_past_the_deadline()
+    {
+        ItemDrop.ItemData sword = Items.Gear("$item_sword", 100f);
+        DurabilityHold.Start(sword, 1f, Now);
+        DurabilityHold.Refresh(sword, Now.AddMinutes(1));
+
+        DurabilityHold.State state = DurabilityHold.Refresh(sword, Now.AddMinutes(11));
+
+        Assert.Equal(DurabilityHold.State.Expired, state);
+        Assert.True(sword.m_shared.m_useDurability);
+        Assert.Empty(sword.m_customData);
+        Assert.Equal(DurabilityHold.State.None, DurabilityHold.Refresh(sword, Now.AddMinutes(12)));
+    }
+
+    [Fact]
+    public void Leaves_gear_without_a_hold_alone()
+    {
+        ItemDrop.ItemData sword = Items.Gear("$item_sword", 100f);
+
+        Assert.Equal(DurabilityHold.State.None, DurabilityHold.Refresh(sword, Now));
+        Assert.True(sword.m_shared.m_useDurability);
+        Assert.Equal(DurabilityHold.State.None, DurabilityHold.Refresh(null, Now));
+    }
+
+    [Fact]
+    public void A_garbled_durability_value_does_not_throw()
+    {
+        ItemDrop.ItemData sword = Items.Gear("$item_sword", 100f);
+        DurabilityHold.Start(sword, 1f, Now);
+        sword.m_customData[DurabilityHold.UseDurabilityKey] = "maybe";
+
+        Assert.Equal(DurabilityHold.State.Expired, DurabilityHold.Refresh(sword, Now.AddHours(1)));
+        Assert.Empty(sword.m_customData);
+    }
+}

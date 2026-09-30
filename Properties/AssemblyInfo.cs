@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OttoAura;
 
@@ -34,3 +35,6 @@ using OttoAura;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion(OttoAuraPlugin.ModVersion)]
 [assembly: AssemblyFileVersion(OttoAuraPlugin.ModVersion)]
+
+// The unit tests under tests/ exercise internal types directly.
+[assembly: InternalsVisibleTo("OttoAura.Tests")]

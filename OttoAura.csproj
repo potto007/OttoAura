@@ -43,6 +43,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The unit tests are their own project; the default glob would compile them into the mod. -->
+    <Compile Remove="tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="assets/auraboost_icon.png" />
   </ItemGroup>
 
@@ -70,7 +75,8 @@
   </Target>
 
   <!-- Read the version out of Thunderstore/manifest.json so one file drives the package. -->
-  <Target Name="ReadManifestVersion" AfterTargets="ILRepacker" Condition="'$(Configuration)' == 'Release'">
+  <!-- Pass -p:SkipPackage=true for a Release compile that leaves the committed zip alone, as tests/run.sh does. -->
+  <Target Name="ReadManifestVersion" AfterTargets="ILRepacker" Condition="'$(Configuration)' == 'Release' AND '$(SkipPackage)' != 'true'">
     <PropertyGroup>
       <ManifestJson>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/Thunderstore/manifest.json'))</ManifestJson>
       <PluginSource>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/Plugin.cs'))</PluginSource>
@@ -88,7 +94,7 @@
        a shippable zip exists. Both used to hang off ILRepacker independently, so a
        DLL locked by a running game failed the copy while packaging carried on and
        printed a success line over the error. -->
-  <Target Name="MakeThunderstorePackage" AfterTargets="ReadManifestVersion" DependsOnTargets="CopyOutputDLL" Condition="'$(Configuration)' == 'Release'">
+  <Target Name="MakeThunderstorePackage" AfterTargets="ReadManifestVersion" DependsOnTargets="CopyOutputDLL" Condition="'$(Configuration)' == 'Release' AND '$(SkipPackage)' != 'true'">
     <RemoveDir Directories="$(PackageStageDir)" />
     <MakeDir Directories="$(PackageStageDir)" />
     <ItemGroup>

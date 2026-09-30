@@ -2,7 +2,7 @@
 
 ![OttoAura. Restore within the ward.](https://raw.githubusercontent.com/potto007/OttoAura/master/docs/images/ottoaura-title.png)
 
-**Version 1.4.4**, built and Harmony-checked against Valheim 1.0.16.
+**Version 1.4.5**, built and Harmony-checked against Valheim 1.0.16.
 
 Your ward heals you and repairs your gear while you stand inside it.
 

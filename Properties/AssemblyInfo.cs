@@ -10,7 +10,7 @@ using OttoAura;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany(OttoAuraPlugin.Author)]
 [assembly: AssemblyProduct(OttoAuraPlugin.ModName)]
-[assembly: AssemblyCopyright("Copyright © 2026 potto007. Based on RepairStation, Copyright © 2022 Azumatt.")]
+[assembly: AssemblyCopyright("Copyright © 2022-2026 OttoAura contributors")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

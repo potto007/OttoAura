@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace OttoAura.Tests;
 
 public class DurabilityHoldTests
@@ -60,5 +62,31 @@ public class DurabilityHoldTests
 
         Assert.Equal(DurabilityHold.State.Expired, DurabilityHold.Refresh(sword, Now.AddHours(1)));
         Assert.Empty(sword.m_customData);
+    }
+
+    /// The deadline is written in the invariant culture, month first. A day first culture
+    /// read it back as 10 May, long past, and a 29th as no date at all.
+    [Theory]
+    [InlineData("en-GB")]
+    [InlineData("de-DE")]
+    public void Holds_in_a_day_first_culture(string culture)
+    {
+        CultureInfo previous = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        try
+        {
+            ItemDrop.ItemData sword = Items.Gear("$item_sword", 100f);
+            DurabilityHold.Start(sword, 1f, Now);
+            Assert.Equal(DurabilityHold.State.Holding, DurabilityHold.Refresh(sword, Now.AddMinutes(9)));
+
+            ItemDrop.ItemData shield = Items.Gear("$item_shield", 100f);
+            DateTime late = new(2026, 9, 29, 14, 0, 0);
+            DurabilityHold.Start(shield, 1f, late);
+            Assert.Equal(DurabilityHold.State.Holding, DurabilityHold.Refresh(shield, late.AddMinutes(9)));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 }

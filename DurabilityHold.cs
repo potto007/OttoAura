@@ -40,7 +40,7 @@ internal static class DurabilityHold
     {
         if (item?.m_shared == null
             || !item.m_customData.TryGetValue(DeadlineKey, out string? deadlineValue)
-            || !DateTime.TryParse(deadlineValue, out DateTime deadline))
+            || !TryReadDeadline(deadlineValue, out DateTime deadline))
         {
             return State.None;
         }
@@ -59,6 +59,15 @@ internal static class DurabilityHold
 
         item.m_customData.Remove(UseDurabilityKey);
         return State.Expired;
+    }
+
+    /// Start writes the deadline in the invariant culture. Reading it back in the player's
+    /// culture ended every hold at once in a day first locale, so the invariant reading comes
+    /// first, and the player's culture is only a fallback for a value written some other way.
+    internal static bool TryReadDeadline(string? value, out DateTime deadline)
+    {
+        return DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out deadline)
+            || DateTime.TryParse(value, out deadline);
     }
 }
 
@@ -107,7 +116,7 @@ internal static class BlacksmithingPatches
             return;
         }
 
-        string remaining = item.m_customData.TryGetValue(DurabilityHold.DeadlineKey, out string? deadlineValue) && DateTime.TryParse(deadlineValue, out DateTime deadline)
+        string remaining = item.m_customData.TryGetValue(DurabilityHold.DeadlineKey, out string? deadlineValue) && DurabilityHold.TryReadDeadline(deadlineValue, out DateTime deadline)
             ? (deadline - DateTime.Now).ToString()
             : "N/A";
         __result += new StringBuilder("\nRepair Time: ").Append(remaining).Append('\n').ToString();

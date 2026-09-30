@@ -2,7 +2,7 @@
 
 ![OttoAura. Restore within the ward.](https://raw.githubusercontent.com/potto007/OttoAura/master/docs/images/ottoaura-title.png)
 
-**Version 1.4.4**, built and Harmony-checked against Valheim 1.0.16.
+**Version 1.4.5**, built and Harmony-checked against Valheim 1.0.16.
 
 Your ward heals you and repairs your gear while you stand inside it.
 
@@ -101,8 +101,9 @@ Section and setting names lost their spaces and their leading numbers in 1.3.0, 
 ## Other mods
 
 - OttoPay 1.5.0 is required, and OttoAura does not load without it. Paid repairs and AuraBoost both work through AuraPay. AuraTrade needs OttoPay 1.6.0 and stays off with anything older.
-- AuraBoost does not stack with run stamina discounts that other mods add through their own status effects. When one is active, the bigger discount wins. Food, meads, Moder's power and item mods built on the game's own status effect types still stack with AuraBoost as usual.- Blacksmithing changes what happens after a repair. When an item reaches full durability, it stops losing durability for a while, and that time is 10 minutes times the player's Blacksmithing skill factor once the factor reaches 0.5. The item data keys are the same ones RepairStation used, so gear repaired by RepairStation keeps its time.
+- AuraBoost does not stack with run stamina discounts that other mods add through their own status effects. When one is active, the bigger discount wins. Food, meads, Moder's power and item mods built on the game's own status effect types still stack with AuraBoost as usual.
+- Blacksmithing changes what happens after a repair. When an item reaches full durability, it stops losing durability for a while, and that time is 10 minutes times the player's Blacksmithing skill factor once the factor reaches 0.5. The item data keys are the ones the RepairStation mod uses, so gear it repaired keeps its time.
 
 ## Credits
 
-OttoAura started from RepairStation 1.2.6 by Azumatt, under the MIT No Attribution license. The ward aura replaced the station, while the Blacksmithing hooks and the ServerSync plumbing came along unchanged. Bugs are mine, so report them at https://github.com/potto007/OttoAura.
+OttoAura is maintained by **Paul Otto**. Report bugs at https://github.com/potto007/OttoAura.

@@ -9,19 +9,19 @@ internal enum Footing
     Road,
 }
 
-// Reads what the local player is standing on from the ground contact Character already tracks,
-// so nothing has to follow footsteps.
+/// Reads what the local player is standing on from the ground contact Character already
+/// tracks, so nothing has to follow footsteps.
 internal static class Ground
 {
-    // Terrain paint keeps one channel per tool: red for hoe dirt, green for cultivation, blue for
-    // paving. Deep North deep snow is painted into all three at once, so a channel only counts
-    // when it is clearly ahead of the other two.
+    /// Terrain paint keeps one channel per tool: red for hoe dirt, green for cultivation, blue
+    /// for paving. Deep North deep snow is painted into all three at once, so a channel only
+    /// counts when it is clearly ahead of the other two.
     private const float ChannelLead = 0.35f;
 
     private static int _sampledFrame = -1;
     private static Footing _sampled;
 
-    // The stamina hook and the status icon both ask every frame, so the answer is kept per frame.
+    /// The stamina hook and the status icon both ask every frame, so the answer is kept per frame.
     internal static Footing Under(Player player)
     {
         if (_sampledFrame != Time.frameCount)
@@ -51,15 +51,15 @@ internal static class Ground
         return piece != null ? FromPiece(piece.m_materialType) : Footing.Wild;
     }
 
-    // Only things a player built count. Boulders, roots and ice floes are not roads.
-    private static Footing FromPiece(WearNTear.MaterialType material) => material switch
+    /// Only things a player built count. Boulders, roots and ice floes are not roads.
+    internal static Footing FromPiece(WearNTear.MaterialType material) => material switch
     {
         WearNTear.MaterialType.Stone or WearNTear.MaterialType.Marble or WearNTear.MaterialType.Ashstone or WearNTear.MaterialType.Ancient => Footing.Road,
         WearNTear.MaterialType.Wood or WearNTear.MaterialType.HardWood or WearNTear.MaterialType.Timberwood or WearNTear.MaterialType.Iron => Footing.Trail,
         _ => Footing.Wild,
     };
 
-    private static Footing FromPaint(Color paint)
+    internal static Footing FromPaint(Color paint)
     {
         if (paint.b - Mathf.Max(paint.r, paint.g) >= ChannelLead)
         {

@@ -4,38 +4,24 @@ using UnityEngine;
 
 namespace OttoAura.AuraTrade;
 
-// AuraTradeController: the Merchant Guild buys valuables. Two ways in:
-//
-//   Drop on the deposit arrow   pick a valuable, a stack or a split of one, up in the inventory and
-//                               drop it on OttoPay's balance icon. OttoPay owns the icon and the
-//                               drag; this class answers through the deposit handler API.
-//   AltPlace + Use on a ward    sells every valuable in the inventory at once.
-//
-// Either way a sale needs AuraPay on and the player standing inside a ward that is switched on
-// and lists them as creator or permitted, the same ward the aura heals in. OttoPay asks canDeposit
-// on every dragged frame, which is what shows or hides the arrow, so nothing is cached.
-//
-// The items leave the inventory first and the net is deposited after. Removal is the step that
-// can fail, and a deposit made before a failed removal would hand out coins for nothing. The
-// deposit only fails for a non-member or an overflowing balance; if it does, the items go back.
+/// The Merchant Guild buys valuables. Two ways in:
+///
+///   Drop on the deposit arrow   pick a valuable, a stack or a split of one, up in the inventory and
+///                               drop it on OttoPay's balance icon. OttoPay owns the icon and the
+///                               drag; this class answers through the deposit handler API.
+///   AltPlace + Use on a ward    sells every valuable in the inventory at once.
+///
+/// Either way a sale needs AuraPay on and the player standing inside a ward that is switched on
+/// and lists them as creator or permitted, the same ward the aura heals in. OttoPay asks canDeposit
+/// on every dragged frame, which is what shows or hides the arrow, so nothing is cached.
+///
+/// TradeSale owns the sale itself, so the order of removal and deposit lives there.
 internal static class AuraTradeController
 {
-    // OttoPay titles the arrow's tooltip with the handler name.
+    /// OttoPay titles the arrow's tooltip with the handler name.
     internal const string HandlerName = "Sell to the Merchant Guild";
 
-    private readonly struct Lot
-    {
-        internal readonly ItemDrop.ItemData Item;
-        internal readonly int Amount;
-
-        internal Lot(ItemDrop.ItemData item, int amount)
-        {
-            Item = item;
-            Amount = amount;
-        }
-    }
-
-    private static readonly List<Lot> _lots = new();
+    private static readonly List<TradeLot> _lots = new();
 
     internal static void Register()
     {
@@ -60,7 +46,7 @@ internal static class AuraTradeController
         && area.IsEnabled()
         && area.HaveLocalAccess();
 
-    // Only the player's own inventory sells. A valuable dragged out of an open chest does not.
+    /// Only the player's own inventory sells. A valuable dragged out of an open chest does not.
     private static bool CanSell(Inventory inventory, ItemDrop.ItemData item, int amount)
     {
         Player? player = Player.m_localPlayer;
@@ -87,8 +73,8 @@ internal static class AuraTradeController
                + $"The fee is {OttoAuraPlugin.AuraTradeFlatFee.Value} coins plus {OttoAuraPlugin.AuraTradePercentFee.Value:0.##}% of each sale, so fewer, larger sales keep more.";
     }
 
-    // The deposit arrow's sale. Answers true only when the items are gone and the net is in the
-    // balance; on false OttoPay leaves the drag as it was.
+    /// The deposit arrow's sale. Answers true only when the items are gone and the net is in the
+    /// balance; on false OttoPay leaves the drag as it was.
     private static bool Sell(Inventory inventory, ItemDrop.ItemData item, int amount)
     {
         Player? player = Player.m_localPlayer;
@@ -104,12 +90,12 @@ internal static class AuraTradeController
         }
 
         _lots.Clear();
-        _lots.Add(new Lot(item, amount));
+        _lots.Add(new TradeLot(item, amount));
         return Complete(player, ward, WhatFor(item, amount));
     }
 
-    // AltPlace + Use on the ward. Always answers true, so the press never falls through to vanilla
-    // and switches the ward off.
+    /// AltPlace + Use on the ward. Always answers true, so the press never falls through to vanilla
+    /// and switches the ward off.
     internal static bool SellAll(Player player, PrivateArea ward)
     {
         _lots.Clear();
@@ -118,7 +104,7 @@ internal static class AuraTradeController
         {
             if (TradeValuation.IsValuable(item))
             {
-                _lots.Add(new Lot(item, item.m_stack));
+                _lots.Add(new TradeLot(item, item.m_stack));
                 count += item.m_stack;
             }
         }
@@ -133,7 +119,7 @@ internal static class AuraTradeController
         return true;
     }
 
-    // Appended to the ward's hover text, after vanilla has already localized its own.
+    /// Appended to the ward's hover text, after vanilla has already localized its own.
     internal static string HoverLine(PrivateArea ward)
     {
         Player? player = Player.m_localPlayer;
@@ -164,81 +150,27 @@ internal static class AuraTradeController
         return Localization.instance.Localize(line);
     }
 
-    // Sells everything in _lots as one sale with one fee.
+    /// Sells everything in _lots as one sale with one fee and tells the seller how it went.
     private static bool Complete(Player player, PrivateArea ward, string what)
     {
-        long gross = 0;
-        foreach (Lot lot in _lots)
+        SaleResult sale = TradeSale.Complete(player.GetInventory(), _lots, TradeValuation.CurrentFees(), new PlayerTradeDesk(player));
+        TradeValuation.Quote quote = sale.Quote;
+        switch (sale.Outcome)
         {
-            gross += TradeValuation.Worth(lot.Item, lot.Amount);
-        }
-
-        TradeValuation.Quote quote = TradeValuation.QuoteFor(gross);
-        if (!quote.Tradeable)
-        {
-            Tell(player, RefusalFor(what, quote));
-            return false;
-        }
-
-        Inventory inventory = player.GetInventory();
-        List<Lot> removed = new(_lots.Count);
-        foreach (Lot lot in _lots)
-        {
-            bool wholeStack = lot.Amount == lot.Item.m_stack;
-            if (!(wholeStack ? inventory.RemoveItem(lot.Item) : inventory.RemoveItem(lot.Item, lot.Amount)))
-            {
-                Restore(player, inventory, removed);
+            case SaleOutcome.Sold:
+                TradeEffects.Broadcast(player, ward, sale.MostValuable!);
+                Tell(player, $"The Merchant Guild bought {what} for {quote.Gross} coins. AuraPay kept {quote.Fee}, and {quote.Net} went to your balance.");
+                return true;
+            case SaleOutcome.Untradeable:
+                Tell(player, RefusalFor(what, quote));
+                return false;
+            case SaleOutcome.LostTrack:
                 Tell(player, "The Merchant Guild lost track of your valuables. Nothing was sold.");
                 return false;
-            }
-            removed.Add(lot);
+            default:
+                Tell(player, "The Merchant Bank refused the deposit. Your valuables are back in your pack.");
+                return false;
         }
-
-        if (!OttoPayBridge.TryDeposit(quote.Net))
-        {
-            Restore(player, inventory, removed);
-            Tell(player, "The Merchant Bank refused the deposit. Your valuables are back in your pack.");
-            return false;
-        }
-
-        TradeEffects.Broadcast(player, ward, MostValuable(removed));
-        Tell(player, $"The Merchant Guild bought {what} for {quote.Gross} coins. AuraPay kept {quote.Fee}, and {quote.Net} went to your balance.");
-        return true;
-    }
-
-    // A split leaves the rest of its stack in the inventory, with m_stack already lowered, so the
-    // amount goes back onto it. A whole stack was taken out, and the room it left is still free for
-    // AddItem. The drop is only there so a valuable can never vanish unpaid.
-    private static void Restore(Player player, Inventory inventory, List<Lot> removed)
-    {
-        foreach (Lot lot in removed)
-        {
-            if (inventory.ContainsItem(lot.Item))
-            {
-                lot.Item.m_stack += lot.Amount;
-                inventory.Changed();
-                continue;
-            }
-
-            if (!inventory.AddItem(lot.Item))
-            {
-                Transform transform = player.transform;
-                ItemDrop.DropItem(lot.Item, lot.Item.m_stack, transform.position + transform.forward + Vector3.up, transform.rotation);
-            }
-        }
-    }
-
-    private static ItemDrop.ItemData MostValuable(List<Lot> lots)
-    {
-        Lot best = lots[0];
-        foreach (Lot lot in lots)
-        {
-            if (TradeValuation.Worth(lot.Item, lot.Amount) > TradeValuation.Worth(best.Item, best.Amount))
-            {
-                best = lot;
-            }
-        }
-        return best.Item;
     }
 
     private static string WhatFor(ItemDrop.ItemData item, int amount)
@@ -250,18 +182,42 @@ internal static class AuraTradeController
     private static string RefusalFor(string what, TradeValuation.Quote quote) =>
         $"{what} is worth {quote.Gross} coins, and the AuraPay fee of {quote.Fee} would take all of it. Sell more at once.";
 
-    // Every message answers a deliberate drop or press, so there is nothing to throttle.
+    /// Every message answers a deliberate drop or press, so there is nothing to throttle.
     private static void Tell(Player player, string message) =>
         player.Message(MessageHud.MessageType.TopLeft, message);
 }
 
-// AltPlace + Use on a ward. Vanilla ignores alt here, so plain Use still switches the ward on and
-// off. The modified press belongs to AuraTrade whenever a sale is possible at this ward, and is
-// never allowed to fall through and switch the ward off by accident.
-[HarmonyPatch(typeof(PrivateArea), nameof(PrivateArea.Interact))]
-static class PrivateAreaInteractPatch
+/// Pays into OttoPay and drops at the seller's feet for TradeSale.
+internal sealed class PlayerTradeDesk : ITradeDesk
 {
-    static bool Prefix(PrivateArea __instance, Humanoid human, bool hold, bool alt, ref bool __result)
+    private readonly Player _player;
+
+    internal PlayerTradeDesk(Player player)
+    {
+        _player = player;
+    }
+
+    public bool TryDeposit(int coins)
+    {
+        return OttoPayBridge.TryDeposit(coins);
+    }
+
+    public void Drop(ItemDrop.ItemData item)
+    {
+        Transform transform = _player.transform;
+        ItemDrop.DropItem(item, item.m_stack, transform.position + transform.forward + Vector3.up, transform.rotation);
+    }
+}
+
+/// AltPlace + Use on a ward. Vanilla ignores alt here, so plain Use still switches the ward on
+/// and off. The modified press belongs to AuraTrade whenever a sale is possible at this ward,
+/// and is never allowed to fall through and switch the ward off by accident.
+[HarmonyPatch]
+internal static class AuraTradePatches
+{
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(PrivateArea), nameof(PrivateArea.Interact))]
+    private static bool PrivateAreaInteractPrefix(PrivateArea __instance, Humanoid human, bool hold, bool alt, ref bool __result)
     {
         if (hold
             || !alt

@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OttoAura;
 
@@ -10,7 +11,7 @@ using OttoAura;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany(OttoAuraPlugin.Author)]
 [assembly: AssemblyProduct(OttoAuraPlugin.ModName)]
-[assembly: AssemblyCopyright("Copyright © 2026 potto007. Based on RepairStation, Copyright © 2022 Azumatt.")]
+[assembly: AssemblyCopyright("Copyright © 2022-2026 OttoAura contributors")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -34,3 +35,6 @@ using OttoAura;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion(OttoAuraPlugin.ModVersion)]
 [assembly: AssemblyFileVersion(OttoAuraPlugin.ModVersion)]
+
+// The unit tests under tests/ exercise internal types directly.
+[assembly: InternalsVisibleTo("OttoAura.Tests")]

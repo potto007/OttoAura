@@ -24,7 +24,7 @@ namespace OttoAura
     public class OttoAuraPlugin : BaseUnityPlugin
     {
         internal const string ModName = "OttoAura";
-        internal const string ModVersion = "1.4.4";
+        internal const string ModVersion = "1.4.5";
         internal const string Author = "potto007";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
@@ -35,7 +35,6 @@ namespace OttoAura
 
         private static readonly ConfigSync ConfigSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = false };
 
-        internal static CraftingStation craftingStationClone = null!;
         internal static OttoAuraPlugin context = null!;
         internal static bool BlacksmithingInstalled;
 
@@ -91,10 +90,7 @@ namespace OttoAura
             AuraTradeTravelEffect = config("AuraTrade", "TravelEffect", "vfx_pick_wisp", "One vanilla effect prefab flown with the sold valuable into the ward. Blank flies nothing.");
             AuraTradeArriveEffects = config("AuraTrade", "ArriveEffects", "fx_summon_spirit_spawn,sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the ward as the sold valuable reaches it.");
 
-            if (Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out var Blacksmithing) && Blacksmithing != null)
-            {
-                BlacksmithingInstalled = true;
-            }
+            BlacksmithingInstalled = Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out PluginInfo? blacksmithing) && blacksmithing != null;
 
             Assembly assembly = Assembly.GetExecutingAssembly();
             _harmony.PatchAll(assembly);
@@ -292,31 +288,5 @@ namespace OttoAura
         }
 
         #endregion
-    }
-    
-    [HarmonyPatch(typeof(ZNetScene),nameof(ZNetScene.Awake))]
-    static class ZNetScene_Awake_Patch
-    {
-        static void Postfix(ZNetScene __instance)
-        {
-            OttoAuraPlugin.craftingStationClone = ZNetScene.instance.GetPrefab("piece_workbench").GetComponent<CraftingStation>();
-        }
-    }
-
-    [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.UpdateRepair))]
-    static class InventoryGui_InCraftTab_Patch
-    {
-        static void Postfix(InventoryGui __instance)
-        {
-            if (OttoAuraPlugin.PreventCraftingStationRepair.Value == OttoAuraPlugin.Toggle.On)
-            {
-                if (Player.m_localPlayer.GetCurrentCraftingStation() != null && !Player.m_localPlayer.NoCostCheat())
-                {
-                    __instance.m_repairPanel.gameObject.SetActive(false);
-                    __instance.m_repairPanelSelection.gameObject.SetActive(false);
-                    __instance.m_repairButton.gameObject.SetActive(false);
-                }
-            }
-        }
     }
 }

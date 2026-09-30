@@ -1,19 +1,22 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using HarmonyLib;
 using SkillManager;
 using UnityEngine;
 
 namespace OttoAura;
 
-// The aura is local player state only: health, durability and the bank balance all belong to
-// the player running this client, so each client ticks for itself and no RPC is needed.
+/// The ward aura heals the local player and repairs their worn gear. Health, durability and
+/// the bank balance all belong to the player running this client, so each client ticks for
+/// itself and no RPC is needed.
 internal static class WardAura
 {
-    private static readonly List<ItemDrop.ItemData> WornItems = new();
+    private const float EmptyBalanceMessageSeconds = 30f;
+
+    private static readonly List<ItemDrop.ItemData> _wornItems = new();
+    private static readonly List<ItemDrop.ItemData> _repairedItems = new();
     private static float _elapsed;
-    private static float _lastEmptyPouchMessage = -1000f;
+    private static float _lastEmptyBalanceMessage = -1000f;
 
     internal static void Update(float deltaTime)
     {
@@ -42,8 +45,8 @@ internal static class WardAura
         Repair(player);
     }
 
-    // An aura needs a player ward that is switched on, contains the player, and lists the
-    // player as its creator or as permitted. That is the same access a ward grants to build.
+    /// An aura needs a player ward that is switched on, contains the player, and lists the
+    /// player as its creator or as permitted. That is the same access a ward grants to build.
     internal static PrivateArea? FindAuraWard(Player player)
     {
         Vector3 position = player.transform.position;
@@ -65,6 +68,50 @@ internal static class WardAura
 
     internal static bool IsPaidRepair => OttoAuraPlugin.CoinsPerItemTick.Value > 0;
 
+    /// Fills worn with the inventory's items that have lost durability and can be repaired.
+    /// Vanilla's worn list also holds items that can never be repaired, such as torches.
+    internal static void CollectRepairable(Inventory inventory, List<ItemDrop.ItemData> worn)
+    {
+        worn.Clear();
+        inventory.GetWornItems(worn);
+        worn.RemoveAll(item => !item.m_shared.m_canBeReparied);
+    }
+
+    /// Puts percent of each item's maximum durability back, never past the maximum, and lists
+    /// the items that reached it so the caller can show the repaired message for each one.
+    internal static void RepairStep(List<ItemDrop.ItemData> worn, float percent, List<ItemDrop.ItemData> repaired)
+    {
+        repaired.Clear();
+        foreach (ItemDrop.ItemData item in worn)
+        {
+            float max = item.GetMaxDurability();
+            item.m_durability = Mathf.Min(max, item.m_durability + max * percent / 100f);
+            if (item.m_durability >= max)
+            {
+                repaired.Add(item);
+            }
+        }
+    }
+
+    internal static string HoverLine(PrivateArea area)
+    {
+        return HoverLine(OttoAuraPlugin.RepairPercentPerTick.Value, OttoAuraPlugin.HealPerSecond.Value, OttoAuraPlugin.CoinsPerItemTick.Value, area.m_radius);
+    }
+
+    /// The ward's hover line on plain values, so the wording can be checked without the engine.
+    /// A paid repair is only worth mentioning while repair is on at all.
+    internal static string HoverLine(float repairPercent, float healPerSecond, int coinsPerItem, float radius)
+    {
+        bool repairs = repairPercent > 0f;
+        bool heals = healPerSecond > 0f;
+        string what = repairs && heals ? "heals you and repairs your gear"
+            : repairs ? "repairs your gear"
+            : heals ? "heals you"
+            : "is idle";
+        string pay = repairs && coinsPerItem > 0 ? ", paid through AuraPay" : "";
+        return $"\n<color=#8FD7FF>Aura {what} within {radius:0} m{pay}</color>";
+    }
+
     private static void Heal(Player player, float elapsed)
     {
         float amount = OttoAuraPlugin.HealPerSecond.Value * elapsed;
@@ -84,27 +131,21 @@ internal static class WardAura
             return;
         }
 
-        WornItems.Clear();
-        player.GetInventory().GetWornItems(WornItems);
-        WornItems.RemoveAll(item => !item.m_shared.m_canBeReparied);
-        if (WornItems.Count == 0)
+        CollectRepairable(player.GetInventory(), _wornItems);
+        if (_wornItems.Count == 0)
         {
             return;
         }
 
-        if (IsPaidRepair && !TryPay(player, OttoAuraPlugin.CoinsPerItemTick.Value * WornItems.Count))
+        if (IsPaidRepair && !TryPay(player, OttoAuraPlugin.CoinsPerItemTick.Value * _wornItems.Count))
         {
             return;
         }
 
-        foreach (ItemDrop.ItemData item in WornItems)
+        RepairStep(_wornItems, percent, _repairedItems);
+        foreach (ItemDrop.ItemData item in _repairedItems)
         {
-            float max = item.GetMaxDurability();
-            item.m_durability = Mathf.Min(max, item.m_durability + max * percent / 100f);
-            if (item.m_durability >= max)
-            {
-                OnFullyRepaired(player, item);
-            }
+            OnFullyRepaired(player, item);
         }
     }
 
@@ -112,24 +153,19 @@ internal static class WardAura
     {
         if (OttoAuraPlugin.BlacksmithingInstalled)
         {
-            int minutesToSet = 0;
-            float skillFactor = player.GetSkillFactor(Skill.fromName("Blacksmithing"));
-            if (skillFactor >= 0.5f)
-            {
-                minutesToSet = (int)(10 * skillFactor);
-            }
-
-            item.m_customData["RepairStation"] = DateTime.Now.AddMinutes(minutesToSet).ToString(CultureInfo.InvariantCulture);
-            item.m_customData["RepairStationUseDurability"] = item.m_shared.m_useDurability.ToString();
+            DurabilityHold.Start(item, player.GetSkillFactor(Skill.fromName("Blacksmithing")), DateTime.Now);
         }
 
         player.Message(MessageHud.MessageType.TopLeft, Localization.instance.Localize("$msg_repaired", item.m_shared.m_name));
-        if (OttoAuraPlugin.craftingStationClone != null)
+        CraftingStation? workbench = CraftingStationPatches.Workbench;
+        if (workbench != null)
         {
-            OttoAuraPlugin.craftingStationClone.m_repairItemDoneEffects.Create(player.transform.position, Quaternion.identity);
+            workbench.m_repairItemDoneEffects.Create(player.transform.position, Quaternion.identity);
         }
     }
 
+    /// Repair is all or nothing for the tick: either every worn item is paid for, or none is
+    /// repaired. The empty balance message repeats at most every half minute.
     private static bool TryPay(Player player, int cost)
     {
         if (!OttoPayBridge.IsAuraPayEnabled())
@@ -142,30 +178,24 @@ internal static class WardAura
             return true;
         }
 
-        if (Time.time - _lastEmptyPouchMessage > 30f)
+        if (Time.time - _lastEmptyBalanceMessage > EmptyBalanceMessageSeconds)
         {
             player.Message(MessageHud.MessageType.TopLeft, "Your Merchant Bank balance is empty. The aura cannot repair your gear.");
-            _lastEmptyPouchMessage = Time.time;
+            _lastEmptyBalanceMessage = Time.time;
         }
 
         return false;
     }
-
-    internal static string HoverLine(PrivateArea area)
-    {
-        string what = OttoAuraPlugin.RepairPercentPerTick.Value > 0f && OttoAuraPlugin.HealPerSecond.Value > 0f ? "heals you and repairs your gear"
-            : OttoAuraPlugin.RepairPercentPerTick.Value > 0f ? "repairs your gear"
-            : OttoAuraPlugin.HealPerSecond.Value > 0f ? "heals you"
-            : "is idle";
-        string pay = IsPaidRepair && OttoAuraPlugin.RepairPercentPerTick.Value > 0f ? ", paid through AuraPay" : "";
-        return $"\n<color=#8FD7FF>Aura {what} within {area.m_radius:0} m{pay}</color>";
-    }
 }
 
-[HarmonyPatch(typeof(PrivateArea), nameof(PrivateArea.GetHoverText))]
-static class PrivateAreaGetHoverTextPatch
+/// Tells a player pointing at a ward they may use what its aura does, and what AuraTrade
+/// would pay there.
+[HarmonyPatch]
+internal static class WardAuraPatches
 {
-    static void Postfix(PrivateArea __instance, ref string __result)
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PrivateArea), nameof(PrivateArea.GetHoverText))]
+    private static void PrivateAreaGetHoverTextPostfix(PrivateArea __instance, ref string __result)
     {
         if (string.IsNullOrEmpty(__result) || Player.m_localPlayer == null || __instance.m_ownerFaction != Character.Faction.Players)
         {

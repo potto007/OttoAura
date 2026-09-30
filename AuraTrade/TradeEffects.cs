@@ -5,17 +5,17 @@ using UnityEngine;
 
 namespace OttoAura.AuraTrade;
 
-// TradeEffects: sold valuables leave the way AuraMove's objects do. A copy of the sold item
-// appears in front of the seller as the depart effects flare, shrinks away while a wisp carries it
-// along an arc into the ward, and the ward answers with the arrival effects.
-//
-// Every player sees it. The seller sends one routed RPC carrying the two points and the item's
-// prefab name, and every client with OttoAura plays the same conjuring from it. Clients without
-// the mod ignore the unknown RPC. The sale itself never rides on this message: by the time it is
-// sent the items are out of the inventory and the coins are in the balance.
-//
-// Every instance goes through MoveEffects, so it is spawned with ZNetView.m_forceDisableInit,
-// stays local to each client, is tracked, and is reaped on the same five-second ceiling.
+/// Sold valuables leave the way AuraMove's objects do. A copy of the sold item
+/// appears in front of the seller as the depart effects flare, shrinks away while a wisp carries it
+/// along an arc into the ward, and the ward answers with the arrival effects.
+///
+/// Every player sees it. The seller sends one routed RPC carrying the two points and the item's
+/// prefab name, and every client with OttoAura plays the same conjuring from it. Clients without
+/// the mod ignore the unknown RPC. The sale itself never rides on this message: by the time it is
+/// sent the items are out of the inventory and the coins are in the balance.
+///
+/// Every instance goes through MoveEffects, so it is spawned with ZNetView.m_forceDisableInit,
+/// stays local to each client, is tracked, and is reaped on the same five-second ceiling.
 internal static class TradeEffects
 {
     internal const string RpcName = "OttoAura_TradeEffect";
@@ -160,12 +160,13 @@ internal static class TradeEffects
     }
 }
 
-// Registered after Game.Start so ZRoutedRpc.instance is alive, the same point AuraMove uses.
-[HarmonyPatch(typeof(Game), nameof(Game.Start))]
-static class TradeEffectsGameStartPatch
+/// Registered after Game.Start so ZRoutedRpc.instance is alive, the same point AuraMove uses.
+[HarmonyPatch]
+internal static class TradeEffectsPatches
 {
     [HarmonyPostfix]
-    private static void Postfix()
+    [HarmonyPatch(typeof(Game), nameof(Game.Start))]
+    private static void GameStartPostfix()
     {
         TradeEffects.Register();
     }

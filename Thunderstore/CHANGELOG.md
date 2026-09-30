@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.5
+
+- With Blacksmithing installed, the durability hold after a full repair ended at once for players whose system shows dates day first, such as en-GB or de-DE. It now lasts its full time everywhere.
+- The durability hold now also checks the item in your left hand when the item in your right hand has no hold.
+- OttoAura is now under the MIT license, held by the OttoAura contributors.
+- The code was reorganized and has unit tests. No setting changed.
+- OttoAura is published on Thunderstore only.
+
 ## 1.4.4
 
 - The README now states the mod version and the Valheim version it was built against. The code is unchanged from 1.4.3, which was rebuilt against Valheim 1.0.16.
@@ -63,6 +71,6 @@
 
 ## 1.0.0
 
-- First release, from RepairStation 1.2.6 by Azumatt, for Valheim 1.0.7.
+- First release, from RepairStation 1.2.6, for Valheim 1.0.7.
 - The repair station is gone. Every vanilla ward you have access to now heals you and repairs your worn gear while you stand inside it.
 - Repairs cost coins from the OttoPay balance when AuraPay is on, and you can set the cost to 0 for free repairs.

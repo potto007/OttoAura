@@ -8,8 +8,8 @@ namespace OttoAura;
 
 // With Blacksmithing installed, a repair also stops durability loss on equipped gear for a
 // time that grows with the player's Blacksmithing skill. The repair writes the deadline to
-// the item's custom data, and these patches enforce it. Kept from RepairStation, including
-// its data keys, so gear repaired by RepairStation keeps its time.
+// the item's custom data, and these patches enforce it. The data keys are the ones the
+// RepairStation mod uses, so gear it repaired keeps its time.
 
 [HarmonyPatch]
 static class PlayerItemGetPatch

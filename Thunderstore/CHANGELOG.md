@@ -63,6 +63,6 @@
 
 ## 1.0.0
 
-- First release, from RepairStation 1.2.6 by Azumatt, for Valheim 1.0.7.
+- First release, from RepairStation 1.2.6, for Valheim 1.0.7.
 - The repair station is gone. Every vanilla ward you have access to now heals you and repairs your worn gear while you stand inside it.
 - Repairs cost coins from the OttoPay balance when AuraPay is on, and you can set the cost to 0 for free repairs.

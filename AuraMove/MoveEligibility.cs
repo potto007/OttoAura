@@ -2,10 +2,9 @@ using UnityEngine;
 
 namespace OttoAura.AuraMove;
 
-// MoveEligibility answers whether a placed piece may be moved by AuraMove and, if not, why.
-// The rules are a direct port of OttoRedecorate.Redecorate.CanMove, minus the hammer/Feaster
-// tool checks, which AuraMove replaces with its own Guild Move piece.
-// Checks run in order; the first match wins.
+/// Whether a placed piece may be moved by AuraMove and, if not, why. The rules are a direct
+/// port of OttoRedecorate.Redecorate.CanMove, minus the hammer/Feaster tool checks, which
+/// AuraMove replaces with its own Guild Move piece. Checks run in order; the first match wins.
 internal enum MoveDenial
 {
     None, NoPlayer, NotPlacedByPlayer, DeniedPrefab, BuildingPiece, Warded, Vehicle,
@@ -63,7 +62,7 @@ internal static class MoveEligibility
         }
 
         // 7. Vehicles move under their own power; the Guild will not carry them.
-        if (piece.GetComponent<Vagon>() || piece.GetComponent<Ship>())
+        if (piece.GetComponent<Vagon>() != null || piece.GetComponent<Ship>() != null)
         {
             return MoveDenial.Vehicle;
         }
@@ -75,45 +74,45 @@ internal static class MoveEligibility
         }
 
         // 9. Plants are rooted.
-        if (piece.GetComponent<Plant>())
+        if (piece.GetComponent<Plant>() != null)
         {
             return MoveDenial.Plant;
         }
 
         // 10. Unowned or locally owned beds can be moved.
-        if (piece.TryGetComponent<Bed>(out var bed) && (bed.GetOwner() == 0L || bed.GetOwner() == localPlayer.GetPlayerID()))
+        if (piece.TryGetComponent<Bed>(out Bed bed) && (bed.GetOwner() == 0L || bed.GetOwner() == localPlayer.GetPlayerID()))
         {
             return MoveDenial.None;
         }
 
         // 11. A live ward is protecting the ground beneath it; moving it would drop coverage.
-        if (piece.TryGetComponent<PrivateArea>(out var area) && area.IsEnabled())
+        if (piece.TryGetComponent<PrivateArea>(out PrivateArea area) && area.IsEnabled())
         {
             return MoveDenial.Ward;
         }
 
         // 12. Armed traps are hazardous to relocate.
-        if (piece.TryGetComponent<Trap>(out var trap) && trap.IsArmed())
+        if (piece.TryGetComponent<Trap>(out Trap trap) && trap.IsArmed())
         {
             return MoveDenial.ArmedTrap;
         }
 
         // 13. An active shield generator cannot be interrupted.
-        if (piece.TryGetComponent<ShieldGenerator>(out var shield) && shield.m_radius > 0f)
+        if (piece.TryGetComponent<ShieldGenerator>(out ShieldGenerator shield) && shield.m_radius > 0f)
         {
             return MoveDenial.ShieldGenerator;
         }
 
         // 14. Stakes and similar AoE weapons with attack settings are refused. Fireplaces share the
         //     Aoe component but are benign, so they are excluded from this check.
-        Aoe aoe = piece.GetComponentInChildren<Aoe>();
-        if (aoe && aoe.m_useAttackSettings && !piece.GetComponent<Fireplace>())
+        Aoe? aoe = piece.GetComponentInChildren<Aoe>();
+        if (aoe != null && aoe.m_useAttackSettings && piece.GetComponent<Fireplace>() == null)
         {
             return MoveDenial.Stake;
         }
 
         // 15. Containers require access, and an open or in-use chest cannot be safely relocated.
-        if (piece.TryGetComponent<Container>(out var container))
+        if (piece.TryGetComponent<Container>(out Container container))
         {
             if (!container.CheckAccess(localPlayer.GetPlayerID()))
             {
@@ -132,9 +131,9 @@ internal static class MoveEligibility
         if (OttoAuraPlugin.AuraMoveSupportImmovable.Value == OttoAuraPlugin.Toggle.On
             && piece.m_category != Piece.PieceCategory.Furniture
             && piece.m_category != Piece.PieceCategory.Crafting
-            && !piece.GetComponent<CraftingStation>()
-            && !piece.GetComponent<StationExtension>()
-            && piece.TryGetComponent<WearNTear>(out var wnt)
+            && piece.GetComponent<CraftingStation>() == null
+            && piece.GetComponent<StationExtension>() == null
+            && piece.TryGetComponent<WearNTear>(out WearNTear wnt)
             && wnt.m_supports)
         {
             return MoveDenial.Supporting;
@@ -163,9 +162,9 @@ internal static class MoveEligibility
         _                           => "",
     };
 
-    // Parse the csv config on every call. The mod has a config file watcher that calls Config.Reload
-    // at runtime, so a stale cache would silently serve the old list. A simple split is cheap enough
-    // for a per-frame hover check.
+    /// Parses the csv config on every call. The mod has a config file watcher that calls
+    /// Config.Reload at runtime, so a stale cache would silently serve the old list. A simple
+    /// split is cheap enough for a per-frame hover check.
     internal static bool IsListed(string csv, string prefabName)
     {
         if (string.IsNullOrEmpty(csv))

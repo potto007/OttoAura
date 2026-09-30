@@ -3,24 +3,24 @@ using HarmonyLib;
 
 namespace OttoAura.AuraTrade;
 
-// TradeTooltip: every valuable's tooltip says what the Merchant Guild would pay for it, one item
-// and, for a stack, the whole stack: gross worth, the AuraPay fee, and the net that reaches the
-// balance. Showing both side by side is what makes the flat part of the fee visible.
+/// Every valuable's tooltip says what the Merchant Guild would pay for it, one item and, for a
+/// stack, the whole stack: gross worth, the AuraPay fee, and the net that reaches the balance.
+/// Showing both side by side is what makes the flat part of the fee visible.
 internal static class TradeTooltip
 {
     private const string ValueTag = "\n$item_value:";
 
-    internal static string Insert(string tooltip, ItemDrop.ItemData item, int stack)
+    internal static string Insert(string tooltip, ItemDrop.ItemData item, int stack, TradeFees fees)
     {
         StringBuilder lines = new();
         if (stack > 1)
         {
-            AppendQuote(lines, "AuraTrade each", TradeValuation.QuoteFor(item.m_shared.m_value));
-            AppendQuote(lines, $"AuraTrade stack of {stack}", TradeValuation.QuoteFor(TradeValuation.Worth(item, stack)));
+            AppendQuote(lines, "AuraTrade each", TradeValuation.QuoteFor(item.m_shared.m_value, fees));
+            AppendQuote(lines, $"AuraTrade stack of {stack}", TradeValuation.QuoteFor(TradeValuation.Worth(item, stack), fees));
         }
         else
         {
-            AppendQuote(lines, "AuraTrade", TradeValuation.QuoteFor(item.m_shared.m_value));
+            AppendQuote(lines, "AuraTrade", TradeValuation.QuoteFor(item.m_shared.m_value, fees));
         }
 
         // Right under vanilla's value line, where the eye already is. Appended at the end when a
@@ -43,13 +43,15 @@ internal static class TradeTooltip
     }
 }
 
-// The static overload is the one every tooltip goes through, the instance GetTooltip included.
-// Shown whether or not AuraPay is on, so a player can see what joining the bank would pay.
-[HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip),
-    typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int), typeof(bool))]
-static class ItemDataGetTooltipPatch
+/// Shown whether or not AuraPay is on, so a player can see what joining the bank would pay.
+[HarmonyPatch]
+internal static class TradeTooltipPatches
 {
-    static void Postfix(ItemDrop.ItemData item, bool crafting, int stackOverride, bool appending, ref string __result)
+    /// The static overload is the one every tooltip goes through, the instance GetTooltip included.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip),
+        typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int), typeof(bool))]
+    private static void ItemDataGetTooltipPostfix(ItemDrop.ItemData item, bool crafting, int stackOverride, bool appending, ref string __result)
     {
         if (crafting
             || appending
@@ -60,6 +62,6 @@ static class ItemDataGetTooltipPatch
             return;
         }
 
-        __result = TradeTooltip.Insert(__result, item, stackOverride > 0 ? stackOverride : item.m_stack);
+        __result = TradeTooltip.Insert(__result, item, stackOverride > 0 ? stackOverride : item.m_stack, TradeValuation.CurrentFees());
     }
 }

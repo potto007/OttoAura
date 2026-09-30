@@ -4,17 +4,17 @@ using UnityEngine;
 
 namespace OttoAura.AuraBoost;
 
-// AuraBoost: a Merchant Bank member with AuraPay on drains less stamina running on roads and
-// trails. The discount lives in a hook on the status effect chain. The status effect itself only
-// carries the icon, the name and the tooltip.
+/// A Merchant Bank member with AuraPay on drains less stamina running on roads and trails. The
+/// discount lives in a hook on the status effect chain. The status effect itself only carries
+/// the icon, the name and the tooltip.
 [HarmonyPatch]
 internal static class AuraBoostEffect
 {
     private const string EffectName = "SE_OttoAura_AuraBoost";
     private const string Flavor = "The magic of AuraPay makes you feel invigorated and lighter on your feet!";
 
-    // How long the icon stays up after the player leaves the road, so a single stride over grass
-    // or a pause to jump does not make it blink.
+    /// How long the icon stays up after the player leaves the road, so a single stride over
+    /// grass or a pause to jump does not make it blink.
     private const float LingerSeconds = 0.75f;
 
     private static readonly Assembly GameAssembly = typeof(StatusEffect).Assembly;
@@ -33,7 +33,7 @@ internal static class AuraBoostEffect
     private static Footing _shownFooting;
     private static float _lingerUntil;
 
-    // The server can switch AuraBoost off, and the player can switch AuraPay off, at any moment.
+    /// The server can switch AuraBoost off, and the player can switch AuraPay off, at any moment.
     internal static bool IsActive => OttoAuraPlugin.AuraBoostEnabled.Value == OttoAuraPlugin.Toggle.On && OttoPayBridge.IsAuraPayEnabled();
 
     public static void Init()
@@ -43,7 +43,7 @@ internal static class AuraBoostEffect
         _template.m_name = NameFor(Footing.Trail);
         _template.m_tooltip = Flavor;
 
-        if (ObjectDB.instance)
+        if (ObjectDB.instance != null)
         {
             AddToObjectDB(ObjectDB.instance);
         }
@@ -56,7 +56,7 @@ internal static class AuraBoostEffect
             return;
         }
 
-        if (ObjectDB.instance)
+        if (ObjectDB.instance != null)
         {
             ObjectDB.instance.m_StatusEffects.Remove(_template);
         }
@@ -65,10 +65,10 @@ internal static class AuraBoostEffect
         _template = null;
     }
 
-    // ObjectDB is rebuilt on every world load, and it is where a status effect hash resolves.
+    /// ObjectDB is rebuilt on every world load, and it is where a status effect hash resolves.
     [HarmonyPostfix]
     [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
-    private static void AddAfterObjectDBAwake(ObjectDB __instance)
+    private static void ObjectDBAwakePostfix(ObjectDB __instance)
     {
         AddToObjectDB(__instance);
     }
@@ -93,19 +93,20 @@ internal static class AuraBoostEffect
     [HarmonyPrefix]
     [HarmonyPriority(Priority.First)]
     [HarmonyPatch(typeof(SEMan), nameof(SEMan.ModifyRunStaminaDrain))]
-    private static void RememberIncomingDrain(float drain, out float __state)
+    private static void SEManModifyRunStaminaDrainPrefix(float drain, out float __state)
     {
         __state = drain;
     }
 
-    // Other mods discount path running through their own status effects. Stacking AuraBoost on
-    // top of one would multiply the two, so the bigger discount wins instead. Effects of the
-    // game's own types (food, meads, Moder's wind, and item mods that reuse SE_Stats) are ordinary
-    // buffs, so they are replayed to find the drain before any modded effect, and still stack.
+    /// Other mods discount path running through their own status effects. Stacking AuraBoost on
+    /// top of one would multiply the two, so the bigger discount wins instead. Effects of the
+    /// game's own types (food, meads, Moder's wind, and item mods that reuse SE_Stats) are
+    /// ordinary buffs, so they are replayed to find the drain before any modded effect, and
+    /// still stack.
     [HarmonyPostfix]
     [HarmonyPriority(Priority.Last)]
     [HarmonyPatch(typeof(SEMan), nameof(SEMan.ModifyRunStaminaDrain))]
-    private static void ApplyDiscount(SEMan __instance, float baseDrain, ref float drain, Vector3 dir, bool minZero, float __state)
+    private static void SEManModifyRunStaminaDrainPostfix(SEMan __instance, float baseDrain, ref float drain, Vector3 dir, bool minZero, float __state)
     {
         // Player.CheckRun is the only caller that clamps at zero. The other one builds the
         // equipment tooltip, and a road under your feet has nothing to do with your gear.
@@ -134,14 +135,25 @@ internal static class AuraBoostEffect
             return;
         }
 
-        // Below 1 another mod is already discounting, and only the bigger discount counts. At or
-        // above 1 it is doing nothing or charging extra, and AuraBoost applies on top of that.
-        float usage = UsageFor(footing);
-        float otherMods = drain / gameDrain;
-        drain = Mathf.Max(0f, gameDrain * (otherMods < 1f ? Mathf.Min(otherMods, usage) : otherMods * usage));
+        drain = DiscountedDrain(gameDrain, drain, UsageFor(footing));
     }
 
-    // Called from the plugin every frame. Keeps the icon in step with the discount.
+    /// The drain once AuraBoost's usage fraction is applied, given the drain after the game's
+    /// own effects and the drain after every effect. Below 1 the difference means another mod
+    /// is already discounting, and only the bigger discount counts. At or above 1 it is doing
+    /// nothing or charging extra, and AuraBoost applies on top of that.
+    internal static float DiscountedDrain(float gameDrain, float drain, float usage)
+    {
+        if (gameDrain <= 0f)
+        {
+            return drain;
+        }
+
+        float otherMods = drain / gameDrain;
+        return Mathf.Max(0f, gameDrain * (otherMods < 1f ? Mathf.Min(otherMods, usage) : otherMods * usage));
+    }
+
+    /// Called from the plugin every frame. Keeps the icon in step with the discount.
     public static void Tick()
     {
         Player? player = Player.m_localPlayer;

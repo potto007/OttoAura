@@ -17,6 +17,17 @@ public static class BuildFogBubbleBundle
 
     public static void Build()
     {
+        // BuildAssetBundles logs some failures, such as a disabled AssetBundle module,
+        // and still writes a bundle the game cannot load. Treat any logged error as fatal.
+        int errors = 0;
+        Application.logMessageReceived += (message, stack, type) =>
+        {
+            if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert)
+            {
+                errors++;
+            }
+        };
+
         string output = ArgAfter("-bundleOutput") ?? "Build";
         Directory.CreateDirectory(output);
 
@@ -39,9 +50,9 @@ public static class BuildFogBubbleBundle
             BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.StrictMode,
             BuildTarget.StandaloneWindows64);
 
-        if (manifest == null || !File.Exists(Path.Combine(output, BundleName)))
+        if (manifest == null || errors > 0 || !File.Exists(Path.Combine(output, BundleName)))
         {
-            Console.Error.WriteLine("BuildFogBubbleBundle: the bundle was not built.");
+            Console.Error.WriteLine($"BuildFogBubbleBundle: the bundle was not built cleanly ({errors} errors logged).");
             EditorApplication.Exit(1);
         }
     }

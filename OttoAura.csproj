@@ -19,6 +19,7 @@
     <Reference Include="assembly_valheim" HintPath="$(CorlibPath)/assembly_valheim.dll" Private="false" Publicize="true" />
     <Reference Include="assembly_utils" HintPath="$(CorlibPath)/assembly_utils.dll" Private="false" Publicize="true" />
     <Reference Include="assembly_guiutils" HintPath="$(CorlibPath)/assembly_guiutils.dll" Private="false" Publicize="true" />
+    <Reference Include="assembly_postprocessing" HintPath="$(CorlibPath)/assembly_postprocessing.dll" Private="false" Publicize="true" />
 
     <Reference Include="0Harmony" HintPath="$(BepInExPath)/core/0Harmony.dll" Private="false" />
     <Reference Include="BepInEx" HintPath="$(BepInExPath)/core/BepInEx.dll" Private="false" />
@@ -45,10 +46,14 @@
   <ItemGroup>
     <!-- The unit tests are their own project; the default glob would compile them into the mod. -->
     <Compile Remove="tests/**" />
+    <!-- The Unity project that builds the fog shader bundle has editor-only scripts. -->
+    <Compile Remove="unity/**" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="assets/auraboost_icon.png" />
+    <!-- Built by tools/build-fog-bubble-bundle.sh. Without it, Wisp Torches do not clear fog. -->
+    <EmbeddedResource Include="assets/ottoaura_fogbubble.bundle" Condition="Exists('assets/ottoaura_fogbubble.bundle')" />
   </ItemGroup>
 
   <ItemGroup>

@@ -12,6 +12,7 @@ using JetBrains.Annotations;
 using OttoAura.AuraBoost;
 using OttoAura.AuraMove;
 using OttoAura.Config;
+using OttoAura.WispFog;
 using ServerSync;
 using UnityEngine;
 
@@ -90,6 +91,9 @@ namespace OttoAura
             AuraTradeTravelEffect = config("AuraTrade", "TravelEffect", "vfx_pick_wisp", "One vanilla effect prefab flown with the sold valuable into the ward. Blank flies nothing.");
             AuraTradeArriveEffects = config("AuraTrade", "ArriveEffects", "fx_summon_spirit_spawn,sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the ward as the sold valuable reaches it.");
 
+            WispTorchClearsFog = config("WispTorch", "ClearsFog", Toggle.On, "If on, a lit Wisp Torch also clears the distance fog inside the radius where it clears the Mists. Free, and only changes what players see.");
+            WispTorchFogRadiusScale = config("WispTorch", "FogRadiusScale", 1f, new ConfigDescription("Size of the fog-free bubble, as a multiple of the radius where the torch clears the Mists.", new AcceptableValueRange<float>(0.25f, 3f)));
+
             BlacksmithingInstalled = Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out PluginInfo? blacksmithing) && blacksmithing != null;
 
             Assembly assembly = Assembly.GetExecutingAssembly();
@@ -127,6 +131,7 @@ namespace OttoAura
         {
             AuraBoostEffect.Init();
             AuraMoveController.Init();
+            FogBubbles.Init();
         }
 
         private void Update()
@@ -194,6 +199,7 @@ namespace OttoAura
             AuraTrade.AuraTradeController.Unregister();
             AuraMoveController.Shutdown();
             AuraBoostEffect.Shutdown();
+            FogBubbles.Shutdown();
             Config.Save();
         }
 
@@ -259,6 +265,8 @@ namespace OttoAura
         internal static ConfigEntry<string> AuraTradeDepartEffects = null!;
         internal static ConfigEntry<string> AuraTradeTravelEffect = null!;
         internal static ConfigEntry<string> AuraTradeArriveEffects = null!;
+        internal static ConfigEntry<Toggle> WispTorchClearsFog = null!;
+        internal static ConfigEntry<float> WispTorchFogRadiusScale = null!;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {

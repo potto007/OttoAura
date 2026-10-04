@@ -51,6 +51,14 @@ The AuraPay network takes a fee for the magic, the way a card processor does: a 
 
 The valuables leave your inventory before the coins are credited, and if the Merchant Bank refuses the deposit they come straight back. A sold valuable disappears the way AuraMove objects do: it appears in front of you, shrinks away as a wisp carries it into the ward, and the ward answers with a spirit summon. Other players nearby who have OttoAura see it too. DeniedItems lists item prefab names the Guild will not buy.
 
+## Wisp Torch fog
+
+A lit Wisp Torch clears the Mists around it, and with OttoAura it also clears the distance fog over the same ground. The fog thins inside the torch's radius and comes back as you look past it, so a torch-lit camp in the Mistlands stands out clearly from outside and stays clear while you stand in it. The 16 lit Wisp Torches nearest you count, wherever you stand, and there is nothing to pay.
+
+This changes only what each player sees. Water, glass, smoke and the Mists themselves keep their own haze, and the sky looks the same as outside. Turn it off with `WispTorch: ClearsFog`, or make the clear area bigger or smaller with `WispTorch: FogRadiusScale`.
+
+The clearing needs a shader built with the same Unity version as the game, which ships inside the mod. If your graphics setup cannot run it, the game's fog stays as it is and the BepInEx log says so once.
+
 ## Client and server
 
 OttoAura is a client mod, so it works on a server that does not have it.
@@ -97,6 +105,8 @@ Section and setting names lost their spaces and their leading numbers in 1.3.0, 
 | AuraTrade: DepartEffects | vfx_Potion_eitr_minor,... | | Comma-separated vanilla effect prefabs played where the sold valuable appears in front of the seller. |
 | AuraTrade: TravelEffect | vfx_pick_wisp | | One vanilla effect prefab flown with the sold valuable into the ward. Blank flies nothing. |
 | AuraTrade: ArriveEffects | fx_summon_spirit_spawn,... | | Comma-separated vanilla effect prefabs played at the ward as the valuable reaches it. |
+| WispTorch: ClearsFog | On | | A lit Wisp Torch also clears the distance fog inside the radius where it clears the Mists. |
+| WispTorch: FogRadiusScale | 1 | 0.25 to 3 | Size of the fog-free area, as a multiple of the radius where the torch clears the Mists. |
 
 ## Other mods
 

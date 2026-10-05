@@ -1,6 +1,6 @@
 # OttoAura feature guide
 
-The full rules behind each feature. The [README](../README.md) has the short version, and the [configuration reference](configuration.md) lists every setting named here.
+The full rules behind each feature. The [README](../README.md) has the short version and the [settings](../README.md#configuration) named here.
 
 ## Ward aura
 

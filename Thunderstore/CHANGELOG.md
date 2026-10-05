@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.5.0
 
-- A lit Wisp Torch now clears the distance fog over the same ground where it clears the Mists. The fog thins inside the torch's radius, whether you stand inside it or look at it from outside, and the game's own fog colour is kept everywhere else. Water, particles and the Mists keep their own haze. Turn it off with `WispTorch: ClearsFog`, or resize the clear area with `WispTorch: FogRadiusScale`.
+- AuraDispel. A lit Wisp Torch now dispels the distance fog over the same ground where it clears the Mists, in every biome. The fog thins inside the torch's radius, whether you stand inside it or look at it from outside, and the game's own fog colour is kept everywhere else. Water, particles and the Mists keep their own haze. It is free and does not need AuraPay. Turn it off with `AuraDispel: Enabled`, or resize the clear area with `AuraDispel: RadiusScale`.
 
 ## 1.4.5
 

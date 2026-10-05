@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.PostProcessing;
 using UnityEngine.Rendering;
 
-namespace OttoAura.WispFog
+namespace OttoAura.AuraDispel
 {
     /// <summary>
     /// Clears the game's distance fog inside the radius where a lit Wisp Torch clears the Mists.
@@ -126,14 +126,14 @@ namespace OttoAura.WispFog
         /// </summary>
         internal static bool TryPopulate(FogComponent fog, CommandBuffer cb)
         {
-            if (_material == null || OttoAuraPlugin.WispTorchClearsFog.Value == OttoAuraPlugin.Toggle.Off)
+            if (_material == null || OttoAuraPlugin.AuraDispelEnabled.Value == OttoAuraPlugin.Toggle.Off)
             {
                 return false;
             }
 
             PostProcessingContext context = fog.context;
             Camera camera = context.camera;
-            int count = CollectBubbles(camera.transform.position, camera.farClipPlane, OttoAuraPlugin.WispTorchFogRadiusScale.Value);
+            int count = CollectBubbles(camera.transform.position, camera.farClipPlane, OttoAuraPlugin.AuraDispelRadiusScale.Value);
             if (count == 0)
             {
                 return false;

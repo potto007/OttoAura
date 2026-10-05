@@ -5,7 +5,7 @@
 // For each pixel it measures how much of the view ray lies inside a bubble, works out how
 // much fog the shorter outside stretch would have built up, and blends the unfogged scene
 // back in by that much. The game's fog colour, sun glow included, is never recomputed.
-// The formulas mirror WispFog/FogBubbleMath.cs; change both together.
+// The formulas mirror AuraDispel/FogBubbleMath.cs; change both together.
 Shader "Hidden/OttoAura/FogBubble"
 {
     Properties

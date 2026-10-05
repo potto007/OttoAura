@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build assets/ottoaura_fogbubble.bundle, the Wisp Torch fog shader, with the Windows
+# Build assets/ottoaura_fogbubble.bundle, the AuraDispel fog shader, with the Windows
 # Unity editor from WSL. Commit the bundle it writes: the mod build embeds it, and CI has
 # no Unity editor.
 #

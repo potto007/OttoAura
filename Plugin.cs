@@ -12,7 +12,7 @@ using JetBrains.Annotations;
 using OttoAura.AuraBoost;
 using OttoAura.AuraMove;
 using OttoAura.Config;
-using OttoAura.WispFog;
+using OttoAura.AuraDispel;
 using ServerSync;
 using UnityEngine;
 
@@ -25,7 +25,7 @@ namespace OttoAura
     public class OttoAuraPlugin : BaseUnityPlugin
     {
         internal const string ModName = "OttoAura";
-        internal const string ModVersion = "1.4.5";
+        internal const string ModVersion = "1.5.0";
         internal const string Author = "potto007";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
@@ -91,8 +91,8 @@ namespace OttoAura
             AuraTradeTravelEffect = config("AuraTrade", "TravelEffect", "vfx_pick_wisp", "One vanilla effect prefab flown with the sold valuable into the ward. Blank flies nothing.");
             AuraTradeArriveEffects = config("AuraTrade", "ArriveEffects", "fx_summon_spirit_spawn,sfx_dverger_heal_finish", "Comma-separated vanilla effect prefabs played at the ward as the sold valuable reaches it.");
 
-            WispTorchClearsFog = config("WispTorch", "ClearsFog", Toggle.On, "If on, a lit Wisp Torch also clears the distance fog inside the radius where it clears the Mists. Free, and only changes what players see.");
-            WispTorchFogRadiusScale = config("WispTorch", "FogRadiusScale", 1f, new ConfigDescription("Size of the fog-free bubble, as a multiple of the radius where the torch clears the Mists.", new AcceptableValueRange<float>(0.25f, 3f)));
+            AuraDispelEnabled = config("AuraDispel", "Enabled", Toggle.On, "If on, a lit Wisp Torch also clears the distance fog inside the radius where it clears the Mists. Free, and only changes what players see.");
+            AuraDispelRadiusScale = config("AuraDispel", "RadiusScale", 1f, new ConfigDescription("Size of the fog-free bubble, as a multiple of the radius where the torch clears the Mists.", new AcceptableValueRange<float>(0.25f, 3f)));
 
             BlacksmithingInstalled = Chainloader.PluginInfos.TryGetValue("org.bepinex.plugins.blacksmithing", out PluginInfo? blacksmithing) && blacksmithing != null;
 
@@ -124,6 +124,10 @@ namespace OttoAura
                 }
                 return $"AuraTrade: inside a ward you may use, drop a valuable on your Merchant Bank balance to sell it, or press {Localization.instance.Localize("$KEY_AltPlace + $KEY_Use")} on the ward to sell every valuable you carry. AuraPay keeps {AuraTradeFlatFee.Value} coins plus {AuraTradePercentFee.Value:0.##}% of each sale, so fewer, larger sales keep more.";
             });
+            OttoPayBridge.RegisterAuraService("AuraDispel", () =>
+                AuraDispelEnabled.Value == Toggle.Off
+                    ? ""
+                    : "AuraDispel: a lit Wisp Torch dispels the fog around it, not just the Mists.");
             AuraTrade.AuraTradeController.Register();
         }
 
@@ -196,6 +200,7 @@ namespace OttoAura
             OttoPayBridge.UnregisterAuraService("AuraBoost");
             OttoPayBridge.UnregisterAuraService("AuraMove");
             OttoPayBridge.UnregisterAuraService("AuraTrade");
+            OttoPayBridge.UnregisterAuraService("AuraDispel");
             AuraTrade.AuraTradeController.Unregister();
             AuraMoveController.Shutdown();
             AuraBoostEffect.Shutdown();
@@ -265,8 +270,8 @@ namespace OttoAura
         internal static ConfigEntry<string> AuraTradeDepartEffects = null!;
         internal static ConfigEntry<string> AuraTradeTravelEffect = null!;
         internal static ConfigEntry<string> AuraTradeArriveEffects = null!;
-        internal static ConfigEntry<Toggle> WispTorchClearsFog = null!;
-        internal static ConfigEntry<float> WispTorchFogRadiusScale = null!;
+        internal static ConfigEntry<Toggle> AuraDispelEnabled = null!;
+        internal static ConfigEntry<float> AuraDispelRadiusScale = null!;
 
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {

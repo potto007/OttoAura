@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OttoAura.WispFog
+namespace OttoAura.AuraDispel
 {
     /// <summary>
     /// The arithmetic behind the fog bubble, kept free of Unity's native side so the unit

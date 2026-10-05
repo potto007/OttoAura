@@ -1,6 +1,8 @@
-# Wisp Torch fog design
+# AuraDispel design
 
-Sub-feature folder `WispFog/`, namespace `OttoAura.WispFog`.
+Sub-feature folder `AuraDispel/`, namespace `OttoAura.AuraDispel`. It dispels the distance fog
+around a lit Wisp Torch. It is free and does not need AuraPay, but it is listed in the AuraPay
+panel with the other Aura services.
 
 ## Premise
 

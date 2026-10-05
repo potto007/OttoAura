@@ -1,11 +1,11 @@
-using OttoAura.WispFog;
+using OttoAura.AuraDispel;
 using UnityEngine;
-using static OttoAura.WispFog.FogBubbleMath;
+using static OttoAura.AuraDispel.FogBubbleMath;
 
 namespace OttoAura.Tests;
 
 /// FogKind is internal, so fog modes are passed by name.
-public class FogBubbleMathTests
+public class AuraDispelTests
 {
     private static FogKind Kind(string name) => Enum.Parse<FogKind>(name);
 

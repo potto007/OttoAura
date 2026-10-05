@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.2
+
+- The README lists each feature with short how-to steps, and the settings are back in it, one small table per config section. The full rules stay in the feature guide. The code is unchanged from 1.5.0.
+
 ## 1.5.1
 
 - The README is much shorter. The full feature rules moved to a feature guide and the settings table to a configuration reference, both linked from the README. The code is unchanged from 1.5.0.

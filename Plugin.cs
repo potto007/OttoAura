@@ -25,7 +25,7 @@ namespace OttoAura
     public class OttoAuraPlugin : BaseUnityPlugin
     {
         internal const string ModName = "OttoAura";
-        internal const string ModVersion = "1.5.2";
+        internal const string ModVersion = "1.5.3";
         internal const string Author = "potto007";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";

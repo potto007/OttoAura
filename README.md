@@ -2,7 +2,7 @@
 
 ![OttoAura. Restore within the ward.](https://raw.githubusercontent.com/potto007/OttoAura/main/docs/images/ottoaura-title.png)
 
-**Version 1.5.2**, built and Harmony-checked against Valheim 1.0.16.
+**Version 1.5.3**, built and Harmony-checked against Valheim 1.0.17.
 
 Your ward heals you and repairs your gear while you stand inside it. Turn on AuraPay in [OttoPay](https://thunderstore.io/c/valheim/p/potto007/OttoPay/) and the Merchant Guild throws in a few more services.
 

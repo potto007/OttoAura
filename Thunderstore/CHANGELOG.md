@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.3
+
+- Rebuilt against Valheim 1.0.17. Every Harmony patch target still resolves in this build, and nothing else changed.
+
 ## 1.5.2
 
 - The README lists each feature with short how-to steps, and the settings are back in it, one small table per config section. The full rules stay in the feature guide. The code is unchanged from 1.5.0.

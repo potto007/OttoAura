@@ -5,4 +5,4 @@ riderModule.iml
 /_ReSharper.Caches/
 RepairStation.sln.DotSettings.user
 .idea
-.vs
+.vsenvironment.local.props

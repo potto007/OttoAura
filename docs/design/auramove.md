@@ -134,7 +134,7 @@ tool.
 ## Eligibility rules
 
 A direct port of `OttoRedecorate.Redecorate.CanMove`
-(`/home/potto/src/valheim/mods/OttoRedecorate/OttoRedecorate/Redecorate.cs:408-525`), minus the
+(`OttoRedecorate/OttoRedecorate/Redecorate.cs:408-525`), minus the
 hammer/Feaster tool rules, which the Guild Move piece replaces. Checks run
 in order and the first match decides. Every deny path returns a `MoveDenial` value so the caller
 can say why.

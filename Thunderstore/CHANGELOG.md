@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.5
+
+- Rebuilt against Valheim 1.0.21. Every Harmony patch target still resolves in this build, and nothing else changed.
+
 ## 1.5.4
 
 - Rebuilt against Valheim 1.0.20. Every Harmony patch target still resolves in this build, and nothing else changed.
